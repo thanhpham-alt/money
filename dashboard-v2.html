@@ -5825,21 +5825,43 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
   window.open(url, '_blank', 'noopener');
 });
 
-/* Seed deploy: lần đầu (chưa có localStorage) nạp money2026-seed.json rồi reload */
+/* Seed deploy:
+   - lần đầu (chưa có LS) → nạp money2026-seed.json
+   - LS chỉ là seed cũ (_seedVersion thấp hơn) → nâng cấp
+   - ?seed=force → ép nạp lại seed (ghi đè)
+   Không đụng data người dùng export/import (không có _seedVersion). */
 async function ensureDeploySeed(){
-  if(localStorage.getItem(LS_KEY)) return false;
-  if(sessionStorage.getItem('money2026_seed_tried') === '1') return false;
+  const force = new URLSearchParams(location.search).get('seed') === 'force';
+  let local = null;
+  try { local = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ local = null; }
+
+  if(!force && local && !local._seedVersion) return false; /* data thật của user */
+  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local) return false;
   sessionStorage.setItem('money2026_seed_tried', '1');
+
   try{
     const res = await fetch('money2026-seed.json?t=' + Date.now(), { cache:'no-store' });
     if(!res.ok) return false;
     const data = await res.json();
     if(!data || typeof data !== 'object') return false;
+    const remoteVer = Number(data._seedVersion || 0);
+    const localVer = Number(local && local._seedVersion || 0);
+    if(!force && local && localVer >= remoteVer && remoteVer > 0) return false;
+    if(!force && local && !localVer && localStorage.getItem(LS_KEY)) return false;
+
     localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
-    location.reload();
+    /* bỏ ?seed=force khỏi URL sau khi nạp */
+    if(force){
+      const u = new URL(location.href);
+      u.searchParams.delete('seed');
+      location.replace(u.pathname + u.search + (u.hash || '#/production'));
+    } else {
+      location.reload();
+    }
     return true;
   }catch(e){ return false; }
 }
+window.forceReloadSeed = ()=>{ sessionStorage.removeItem('money2026_seed_tried'); location.search = (location.search ? location.search+'&' : '?') + 'seed=force'; };
 
 /* Khởi động: ?public=1 (từ bluescope-public.html) = khóa chỉ-xem.
    Admin mở #/public/bluescope không có ?public=1 → xem trước, vẫn về admin được. */

@@ -1,7 +1,8 @@
 {
-  "exportedAt": "2026-08-11T01:01:15.978Z",
+  "exportedAt": "2026-08-11T02:17:34.039913Z",
   "version": 1,
   "rate": {
+    "excelLegacy": false,
     "rows": [
       {
         "name": "PHOTO - RETOUCH (FREE)",
@@ -27,15 +28,15 @@
         "half": 3000000,
         "full": 0
       }
-    ],
-    "excelLegacy": false
+    ]
   },
   "budgets": [
     {
-      "id": "bg1786285653688t2ij",
-      "label": "Blueseed",
+      "id": "bg1786414487394i2ld",
+      "label": "Ngân sách Bluescope",
       "amount": 100000000,
       "paid": false,
+      "payer": "",
       "paidDate": ""
     }
   ],
@@ -49,7 +50,7 @@
       "video": 1,
       "recap": 1,
       "dung": 0,
-      "discount": 1000000
+      "discount": 0
     },
     {
       "name": "Quay Bình Dương",
@@ -60,7 +61,7 @@
       "video": 1,
       "recap": 2,
       "dung": 0,
-      "discount": 2000000
+      "discount": 0
     },
     {
       "name": "Sửa POSM",
@@ -71,6 +72,17 @@
       "video": 0,
       "recap": 0,
       "dung": 3000000,
+      "discount": 0
+    },
+    {
+      "name": "FY 26",
+      "date": "",
+      "type": "",
+      "time": "",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 0,
       "discount": 0
     },
     {
@@ -108,24 +120,13 @@
     },
     {
       "name": "Recap FY26",
-      "date": "2026-08-09",
+      "date": "",
       "type": "",
       "time": "",
       "photo": 0,
       "video": 0,
       "recap": 0,
-      "dung": 6000000,
-      "discount": 0
-    },
-    {
-      "name": "MKT",
-      "date": "2026-08-09",
-      "type": "",
-      "time": "CẢ NGÀY",
-      "photo": 0,
-      "video": 0,
-      "recap": 0,
-      "dung": 3000000,
+      "dung": 0,
       "discount": 0
     }
   ]
