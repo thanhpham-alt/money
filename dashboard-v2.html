@@ -2703,6 +2703,8 @@ body.public-mode #panel-bs-public{display:none!important}
 
 </div>
 
+<script src="money2026-seed.js"></script>
+<script src="bluescope-public-data.js"></script>
 <script>
 /* ================= helpers ================= */
 const nf = new Intl.NumberFormat('vi-VN');
@@ -5585,14 +5587,20 @@ function applyPublicData(payload){
 }
 
 async function loadPublicData(){
-  /* Ưu tiên file JSON deploy cạnh HTML — data public không lấy từ admin UI. */
+  /* Ưu tiên data nhúng (BLUESCOPE_PUBLIC_DATA), rồi JSON file, rồi localStorage. */
+  if(typeof BLUESCOPE_PUBLIC_DATA !== 'undefined' && BLUESCOPE_PUBLIC_DATA){
+    if(applyPublicData(BLUESCOPE_PUBLIC_DATA)){
+      PUBLIC_META.source = 'embedded';
+      return true;
+    }
+  }
   try{
     const res = await fetch('bluescope-public-data.json?t=' + Date.now(), { cache:'no-store' });
     if(res.ok){
       const data = await res.json();
       if(applyPublicData(data)) return true;
     }
-  }catch(e){ /* offline / file chưa có → dùng localStorage */ }
+  }catch(e){ /* offline */ }
   PUBLIC_META.source = 'localStorage';
   PUBLIC_META.updatedAt = PUBLIC_META.updatedAt || new Date().toISOString();
   return false;
@@ -5825,43 +5833,56 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
   window.open(url, '_blank', 'noopener');
 });
 
-/* Seed deploy:
-   - lần đầu (chưa có LS) → nạp money2026-seed.json
-   - LS chỉ là seed cũ (_seedVersion thấp hơn) → nâng cấp
-   - ?seed=force → ép nạp lại seed (ghi đè)
-   Không đụng data người dùng export/import (không có _seedVersion). */
+/* Seed deploy (ưu tiên window.MONEY2026_SEED nhúng sẵn — không phụ thuộc fetch):
+   - lần đầu / seed cũ → nạp
+   - ?seed=force → ép nạp lại
+   Không đụng data user (không có _seedVersion) trừ khi force. */
 async function ensureDeploySeed(){
   const force = new URLSearchParams(location.search).get('seed') === 'force';
   let local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ local = null; }
 
-  if(!force && local && !local._seedVersion) return false; /* data thật của user */
-  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local) return false;
+  if(!force && local && !local._seedVersion) return false;
+  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local){
+    const lv = Number(local._seedVersion || 0);
+    const emb = (typeof MONEY2026_SEED !== 'undefined' && MONEY2026_SEED) ? Number(MONEY2026_SEED._seedVersion || 0) : 0;
+    if(lv >= emb && emb > 0) return false;
+  }
   sessionStorage.setItem('money2026_seed_tried', '1');
 
-  try{
-    const res = await fetch('money2026-seed.json?t=' + Date.now(), { cache:'no-store' });
-    if(!res.ok) return false;
-    const data = await res.json();
-    if(!data || typeof data !== 'object') return false;
-    const remoteVer = Number(data._seedVersion || 0);
-    const localVer = Number(local && local._seedVersion || 0);
-    if(!force && local && localVer >= remoteVer && remoteVer > 0) return false;
-    if(!force && local && !localVer && localStorage.getItem(LS_KEY)) return false;
+  let data = null;
+  if(typeof MONEY2026_SEED !== 'undefined' && MONEY2026_SEED && typeof MONEY2026_SEED === 'object'){
+    data = MONEY2026_SEED;
+  } else {
+    try{
+      const res = await fetch('money2026-seed.json?t=' + Date.now(), { cache:'no-store' });
+      if(res.ok) data = await res.json();
+    }catch(e){}
+  }
+  if(!data || typeof data !== 'object') return false;
 
-    localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
-    /* bỏ ?seed=force khỏi URL sau khi nạp */
-    if(force){
-      const u = new URL(location.href);
-      u.searchParams.delete('seed');
-      location.replace(u.pathname + u.search + (u.hash || '#/production'));
-    } else {
-      location.reload();
-    }
-    return true;
-  }catch(e){ return false; }
+  const remoteVer = Number(data._seedVersion || 0);
+  const localVer = Number(local && local._seedVersion || 0);
+  if(!force && local && localVer >= remoteVer && remoteVer > 0) return false;
+  if(!force && local && !localVer && localStorage.getItem(LS_KEY)) return false;
+
+  localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
+  if(force){
+    const u = new URL(location.href);
+    u.searchParams.delete('seed');
+    location.replace(u.pathname + u.search + (u.hash || '#/production'));
+  } else {
+    location.reload();
+  }
+  return true;
 }
-window.forceReloadSeed = ()=>{ sessionStorage.removeItem('money2026_seed_tried'); location.search = (location.search ? location.search+'&' : '?') + 'seed=force'; };
+window.forceReloadSeed = ()=>{
+  sessionStorage.removeItem('money2026_seed_tried');
+  const u = new URL(location.href);
+  u.searchParams.set('seed', 'force');
+  if(!u.hash || u.hash === '#') u.hash = '#/production';
+  location.href = u.toString();
+};
 
 /* Khởi động: ?public=1 (từ bluescope-public.html) = khóa chỉ-xem.
    Admin mở #/public/bluescope không có ?public=1 → xem trước, vẫn về admin được. */
