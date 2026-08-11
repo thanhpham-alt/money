@@ -203,18 +203,31 @@ Số liệu đã nhập **không** tự lên server — mỗi máy/browser một
 
 Tuỳ chọn: đổi tên site trong Site settings.
 
-### 6.3. Cách B — Vercel (static)
+### 6.3. Cách B — Vercel (static) — đã cấu hình sẵn
 
-```bash
-cd "/Users/macbook/Documents/MAC MEDIA/MONEY_2026"
-npx vercel
-```
+Repo đã có `vercel.json` + `index.html` + data seed.
 
-- Framework: **Other**
-- Output: thư mục hiện tại
-- URL ví dụ: `https://money-2026.vercel.app/dashboard-v2.html#/tong-quan`
+**Settings Vercel (quan trọng — tránh 404):**
 
-Hoặc kéo folder lên [vercel.com/new](https://vercel.com/new).
+| Setting | Giá trị |
+|---|---|
+| Framework Preset | **Other** |
+| Root Directory | `.` (repo root, **không** chọn `money-app`) |
+| Build Command | *(để trống)* |
+| Output Directory | *(để trống)* |
+
+**URL sau deploy:**
+
+| | |
+|---|---|
+| Admin (có seed data lần đầu) | `https://<project>.vercel.app/` hoặc `/dashboard-v2.html#/tong-quan` |
+| Public Bluescope | `https://<project>.vercel.app/bluescope-public.html` |
+| Data public | `/bluescope-public-data.json` (tự nạp) |
+| Seed admin | `/money2026-seed.json` (nạp 1 lần nếu localStorage trống) |
+
+**Cập nhật data public:** export JSON trên máy → thay `bluescope-public-data.json` → commit + push → Vercel redeploy.
+
+Redeploy: Vercel Dashboard → Deployments → **Redeploy** (sau mỗi push `main`).
 
 ### 6.4. Cách C — GitHub Pages
 
