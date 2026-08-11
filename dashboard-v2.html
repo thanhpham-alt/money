@@ -5834,19 +5834,22 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
 });
 
 /* Seed deploy (ưu tiên window.MONEY2026_SEED nhúng sẵn — không phụ thuộc fetch):
-   - lần đầu / seed cũ → nạp
-   - ?seed=force → ép nạp lại
-   Không đụng data user (không có _seedVersion) trừ khi force. */
+   - lần đầu / seed version thấp hơn → nạp
+   - thiếu Production LG (pros rỗng / không có 7.8 LG) → nạp
+   - ?seed=force → ép nạp lại */
 async function ensureDeploySeed(){
   const force = new URLSearchParams(location.search).get('seed') === 'force';
   let local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ local = null; }
 
-  if(!force && local && !local._seedVersion) return false;
-  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local){
-    const lv = Number(local._seedVersion || 0);
-    const emb = (typeof MONEY2026_SEED !== 'undefined' && MONEY2026_SEED) ? Number(MONEY2026_SEED._seedVersion || 0) : 0;
-    if(lv >= emb && emb > 0) return false;
+  const embVer = (typeof MONEY2026_SEED !== 'undefined' && MONEY2026_SEED)
+    ? Number(MONEY2026_SEED._seedVersion || 0) : 0;
+  const localVer = Number(local && local._seedVersion || 0);
+  const pros = (local && Array.isArray(local.pros)) ? local.pros : [];
+  const missingLG = !pros.length || !pros.some(p => /LG|7\.8/i.test(String(p && p.name || '') + String(p && p.client || '')));
+
+  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local && localVer >= embVer && embVer > 0 && !missingLG){
+    return false;
   }
   sessionStorage.setItem('money2026_seed_tried', '1');
 
@@ -5862,9 +5865,9 @@ async function ensureDeploySeed(){
   if(!data || typeof data !== 'object') return false;
 
   const remoteVer = Number(data._seedVersion || 0);
-  const localVer = Number(local && local._seedVersion || 0);
-  if(!force && local && localVer >= remoteVer && remoteVer > 0) return false;
-  if(!force && local && !localVer && localStorage.getItem(LS_KEY)) return false;
+  const needUpgrade = remoteVer > 0 && localVer < remoteVer;
+  const needFillLG = missingLG && Array.isArray(data.pros) && data.pros.length > 0;
+  if(!force && local && !needUpgrade && !needFillLG) return false;
 
   localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
   if(force){
