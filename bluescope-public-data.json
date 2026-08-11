@@ -1,0 +1,132 @@
+{
+  "exportedAt": "2026-08-11T01:01:15.978Z",
+  "version": 1,
+  "rate": {
+    "rows": [
+      {
+        "name": "PHOTO - RETOUCH (FREE)",
+        "qty": 1,
+        "half": 3000000,
+        "full": 5000000
+      },
+      {
+        "name": "CAMERA MAN",
+        "qty": 1,
+        "half": 3500000,
+        "full": 6000000
+      },
+      {
+        "name": "EDIT VIDEO 9 16 - TIKTOK",
+        "qty": 1,
+        "half": 5000000,
+        "full": 0
+      },
+      {
+        "name": "SHORT CLIP (VIE-ENG)",
+        "qty": 1,
+        "half": 3000000,
+        "full": 0
+      }
+    ],
+    "excelLegacy": false
+  },
+  "budgets": [
+    {
+      "id": "bg1786285653688t2ij",
+      "label": "Blueseed",
+      "amount": 100000000,
+      "paid": false,
+      "paidDate": ""
+    }
+  ],
+  "bluescope": [
+    {
+      "name": "Quay Trồng Cây",
+      "date": "2026-06-11",
+      "type": "ĐI TỈNH",
+      "time": "CẢ NGÀY",
+      "photo": 0,
+      "video": 1,
+      "recap": 1,
+      "dung": 0,
+      "discount": 1000000
+    },
+    {
+      "name": "Quay Bình Dương",
+      "date": "2026-06-17",
+      "type": "ĐI TỈNH",
+      "time": "CẢ NGÀY",
+      "photo": 0,
+      "video": 1,
+      "recap": 2,
+      "dung": 0,
+      "discount": 2000000
+    },
+    {
+      "name": "Sửa POSM",
+      "date": "2026-06-26",
+      "type": "BRIEF KHÁC",
+      "time": "NỬA NGÀY",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 3000000,
+      "discount": 0
+    },
+    {
+      "name": "Recap Q3",
+      "date": "2025-06-06",
+      "type": "EDIT",
+      "time": "NỬA NGÀY",
+      "photo": 0,
+      "video": 0,
+      "recap": 1,
+      "dung": 0,
+      "discount": 0
+    },
+    {
+      "name": "POSM — 2 banner",
+      "date": "2025-07-04",
+      "type": "BRIEF KHÁC",
+      "time": "CẢ NGÀY",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 2000000,
+      "discount": 0
+    },
+    {
+      "name": "Recap Q3 fix 2",
+      "date": "2026-07-19",
+      "type": "HCM",
+      "time": "CẢ NGÀY",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 2000000,
+      "discount": 0
+    },
+    {
+      "name": "Recap FY26",
+      "date": "2026-08-09",
+      "type": "",
+      "time": "",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 6000000,
+      "discount": 0
+    },
+    {
+      "name": "MKT",
+      "date": "2026-08-09",
+      "type": "",
+      "time": "CẢ NGÀY",
+      "photo": 0,
+      "video": 0,
+      "recap": 0,
+      "dung": 3000000,
+      "discount": 0
+    }
+  ]
+}

@@ -5825,9 +5825,26 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
   window.open(url, '_blank', 'noopener');
 });
 
+/* Seed deploy: lần đầu (chưa có localStorage) nạp money2026-seed.json rồi reload */
+async function ensureDeploySeed(){
+  if(localStorage.getItem(LS_KEY)) return false;
+  if(sessionStorage.getItem('money2026_seed_tried') === '1') return false;
+  sessionStorage.setItem('money2026_seed_tried', '1');
+  try{
+    const res = await fetch('money2026-seed.json?t=' + Date.now(), { cache:'no-store' });
+    if(!res.ok) return false;
+    const data = await res.json();
+    if(!data || typeof data !== 'object') return false;
+    localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
+    location.reload();
+    return true;
+  }catch(e){ return false; }
+}
+
 /* Khởi động: ?public=1 (từ bluescope-public.html) = khóa chỉ-xem.
    Admin mở #/public/bluescope không có ?public=1 → xem trước, vẫn về admin được. */
 (async ()=>{
+  /* public không nạp full seed admin; admin lần đầu nạp seed deploy */
   const slug = (location.hash || '').replace(/^#\/?/, '');
   const params = new URLSearchParams(location.search);
   if(params.get('public') === '1') sessionStorage.setItem('money2026_public_only', '1');
@@ -5841,6 +5858,8 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
     showTab('bspublic');
     return;
   }
+
+  if(await ensureDeploySeed()) return; /* reload sau seed */
   routeFromHash();
 })();
 /* nút Nạp Excel trên đầu bảng Job */
