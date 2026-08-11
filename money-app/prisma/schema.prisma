@@ -1,0 +1,257 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Cấu hình 1 dòng (singleton id = "default")
+/// Bluescope budget/spent/received lấy từ Job jobType=BLUESCOPE — không duplicate ở đây.
+model Settings {
+  id             String   @id @default("default")
+  cashOnHand     Float    @default(0)
+  invoiceFeeRate Float    @default(0.04)
+  aTanShareRate  Float    @default(0.2)
+  /// Link Google Sheet booking (nhập liệu thô)
+  bluescopeUrl   String   @default("https://docs.google.com/spreadsheets/d/1ygn6O9Ej1-AmaeCVDOp6UD3pnbiyhG0c-ZUJ4MgNzdo/edit")
+  updatedAt      DateTime @updatedAt
+}
+
+/// Job Production — khuôn chung: AGENCY | EVENT | BLUESCOPE
+model Job {
+  id            String   @id @default(uuid())
+  code          String   @unique
+  /// AGENCY | EVENT | BLUESCOPE
+  jobType       String   @default("AGENCY")
+  agency        String
+  name          String
+  status        String   @default("Đang làm")
+  contractTotal Float    @default(0)
+  collected     Float    @default(0)
+  externalUrl   String?
+  notes         String?
+  /// Cho phép hiện trên /bluescope/public
+  publicVisible Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  /// Production: A Tân nhập tay (null = tính theo % trong Settings)
+  aTanAmount    Float?
+  /// Production: % phí xuất hoá đơn riêng cho job (null = 4% chung)
+  feeRate       Float?
+  /// Production: % hoá đơn phương án 2 (sheet dùng 8%)
+  altFeeRate    Float    @default(0.08)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  expenses      JobExpense[]
+  advances      JobAdvance[]
+
+  @@index([agency])
+  @@index([status])
+  @@index([jobType])
+}
+
+/// ĐÃ ỨNG — các lần ứng tiền trước cho job
+model JobAdvance {
+  id        String   @id @default(uuid())
+  jobId     String
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  paidAt    DateTime?
+  amount    Float    @default(0)
+  note      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+}
+
+/// Tài Chính · Đất — 1 dòng (singleton id = "default"), theo sheet "Tài Chính"
+model LandFinance {
+  id                String   @id @default("default")
+  /// I · Góp vốn mua đất (2021)
+  capitalPartner    Float    @default(250000000)
+  capitalMine       Float    @default(700000000)
+  /// II · Khoản vay ngân hàng — tổng gốc ban đầu và mức giảm mỗi tháng
+  loanPartner       Float    @default(225000000)
+  loanMine          Float    @default(353000000)
+  loanTotalStart    Float    @default(573611101)
+  loanMonthlyAmort  Float    @default(3240741)
+  loanStartDate     DateTime @default("2026-07-10T00:00:00.000Z")
+  /// III · Tính lợi nhuận khi bán
+  salePrice         Float    @default(1300000000)
+  loanCost1         Float    @default(12000000)
+  loanCost2         Float    @default(20000000)
+  saleCommissionPct Float    @default(0.02)
+  /// V · Quyết toán
+  partnerPrincipal  Float    @default(25000000)
+  updatedAt         DateTime @updatedAt
+}
+
+model JobExpense {
+  id         String   @id @default(uuid())
+  jobId      String
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name       String
+  amount     Float    @default(0)
+  note       String?
+  person     String?
+  paidStatus String   @default("Chưa")
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([jobId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// BLUESCOPE — build hẳn trong app, không link Google Sheets
+// Ngân sách / Đã nhận vẫn nằm trên Job jobType=BLUESCOPE.
+// ĐÃ XÀI = tổng BluescopeEvent.total (phái sinh, không nhập tay).
+// ─────────────────────────────────────────────────────────────
+
+/// Rate card nhân sự: nửa ngày / cả ngày
+model BluescopeRate {
+  id        String   @id @default(uuid())
+  role      String
+  qty       Int      @default(1)
+  halfDay   Float    @default(0)
+  fullDay   Float    @default(0)
+  note      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Booking sự kiện — sổ chính Bluescope
+model BluescopeEvent {
+  id            String    @id @default(uuid())
+  name          String    @default("")
+  briefBy       String?
+  deliverDate   DateTime?
+  brief         String?
+  /// ĐI TỈNH | HCM | EDIT | BRIEF KHÁC | PODCAST | EVENT
+  eventType     String?
+  photographers Int       @default(0)
+  videographers Int       @default(0)
+  recapClips    Int       @default(0)
+  /// NỬA NGÀY | CẢ NGÀY
+  duration      String?
+  shootCost     Float     @default(0)
+  editCost      Float     @default(0)
+  discount      Float     @default(0)
+  /// Chi hộ (nguồn ngoài ngân sách)
+  paidByUs      Float     @default(0)
+  note          String?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([eventType])
+}
+
+/// Gói báo giá (PODCAST / EVENT / VIDEO…)
+model BluescopePackage {
+  id        String   @id @default(uuid())
+  name      String
+  note      String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     BluescopePackageItem[]
+}
+
+model BluescopePackageItem {
+  id        String           @id @default(uuid())
+  packageId String
+  package   BluescopePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  name      String
+  unit      String?
+  qty       Float            @default(1)
+  unitPrice Float            @default(0)
+  sortOrder Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([packageId])
+}
+
+/// Content list theo kênh (EXTERNAL / INTERNAL COMMUNICATION)
+model BluescopeContent {
+  id           String    @id @default(uuid())
+  /// EXTERNAL | INTERNAL
+  channel      String    @default("EXTERNAL")
+  name         String    @default("")
+  /// Video | Multi Image | Podcast | Interview | Link Youtube | Photo shooting
+  contentType  String?
+  publishDate  DateTime?
+  originalCost Float?
+  finalCost    Float?
+  scope        String?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([channel])
+}
+
+model PersonalDebt {
+  id             String   @id @default(uuid())
+  key            String   @unique
+  label          String
+  principal      Float    @default(0)
+  monthlyPayment Float    @default(0)
+  monthsPaid     Int      @default(0)
+  amountPaid     Float    @default(0)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  payments       DebtPayment[]
+}
+
+model DebtPayment {
+  id        String       @id @default(uuid())
+  debtId    String
+  debt      PersonalDebt @relation(fields: [debtId], references: [id], onDelete: Cascade)
+  paidAt    DateTime     @default(now())
+  amount    Float
+  note      String?
+  createdAt DateTime     @default(now())
+
+  @@index([debtId])
+}
+
+model CreditCard {
+  id        String   @id @default(uuid())
+  bank      String
+  /// DƯ NỢ gốc tại thời điểm bắt đầu theo dõi
+  principal Float    @default(0)
+  /// Số trả mỗi tháng — tới ngày đáo hạn là trừ
+  monthly   Float    @default(0)
+  /// Ngày đáo hạn hằng tháng (Techcombank 5, OCB 25, TPB 25)
+  dueDay    Int      @default(5)
+  /// Bắt đầu trừ từ mốc này
+  startDate DateTime @default(now())
+  /// Điều chỉnh tay (+/−) nếu tháng nào trả khác kế hoạch
+  adjust    Float    @default(0)
+  /// Dòng "Tiền cố định": chỉ tính khoản trả tháng, không có dư nợ
+  fixedOnly Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  payments  CreditPayment[]
+}
+
+model CreditPayment {
+  id        String     @id @default(uuid())
+  cardId    String
+  card      CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  year      Int
+  month     Int
+  amount    Float      @default(0)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([cardId, year, month])
+  @@index([cardId])
+}

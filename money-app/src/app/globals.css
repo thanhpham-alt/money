@@ -1,0 +1,371 @@
+@import "tailwindcss";
+
+/* ══════════════════════════════════════════════════════════════
+   MONEY 2026 — design system (light-only, fintech style)
+   ══════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg: #f5f6fb;
+  --surface: #ffffff;
+  --line: #e9ebf3;
+  --line-soft: #f1f2f8;
+
+  --ink: #131829;
+  --ink-2: #4a5169;
+  --ink-3: #858ca6;
+
+  --brand: #5145e5;
+  --brand-2: #7c5cf5;
+  --brand-soft: #eeecfe;
+
+  --good: #0fa47f;
+  --good-soft: #e3f7f1;
+  --warn: #e8912a;
+  --warn-soft: #fdf1e0;
+  --bad: #e5484d;
+  --bad-soft: #fdeaea;
+
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px rgba(19, 24, 41, 0.05);
+  --shadow: 0 4px 16px -4px rgba(19, 24, 41, 0.1);
+  --shadow-lg: 0 18px 40px -12px rgba(19, 24, 41, 0.18);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-canvas {
+  background:
+    radial-gradient(900px 380px at 8% -8%, rgba(81, 69, 229, 0.09), transparent 60%),
+    radial-gradient(760px 320px at 96% -4%, rgba(124, 92, 245, 0.08), transparent 55%),
+    var(--bg);
+}
+
+/* ── Layout ─────────────────────────────────────────────────── */
+
+.page {
+  @apply mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6;
+}
+
+.page-title {
+  @apply text-[22px] font-bold tracking-[-0.01em] text-[var(--ink)];
+}
+
+.page-sub {
+  @apply mt-0.5 text-[13px] text-[var(--ink-3)];
+}
+
+.section-title {
+  @apply text-[15px] font-semibold text-[var(--ink)];
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+
+.card {
+  @apply rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)];
+  box-shadow: var(--shadow-sm);
+}
+
+.card-pad {
+  @apply p-4 sm:p-5;
+}
+
+/* Hero — thẻ số dư gradient */
+.hero {
+  @apply relative overflow-hidden rounded-[20px] p-5 text-white sm:p-6;
+  background: linear-gradient(135deg, #5145e5 0%, #7c5cf5 48%, #4aa8f0 100%);
+  box-shadow: var(--shadow-lg);
+}
+
+.hero::after {
+  content: "";
+  @apply pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.hero::before {
+  content: "";
+  @apply pointer-events-none absolute -bottom-24 left-10 h-56 w-56 rounded-full;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-inner {
+  @apply relative z-10;
+}
+
+/* Glass pill trên hero */
+.glass {
+  @apply rounded-xl border border-white/25 bg-white/15 backdrop-blur-sm;
+}
+
+/* ── Metric tile ────────────────────────────────────────────── */
+
+.tile {
+  @apply flex items-start gap-3 rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)] p-4 transition-shadow;
+  box-shadow: var(--shadow-sm);
+}
+
+.tile:hover {
+  box-shadow: var(--shadow);
+}
+
+.tile-icon {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl;
+}
+
+.tile-label {
+  @apply text-[12px] font-medium text-[var(--ink-3)];
+}
+
+.tile-value {
+  @apply mt-1 text-[19px] font-bold leading-none tracking-[-0.01em] text-[var(--ink)] tabular-nums;
+}
+
+.tile-note {
+  @apply mt-1.5 text-[11px] text-[var(--ink-3)];
+}
+
+/* ── Nav ────────────────────────────────────────────────────── */
+
+.nav-link {
+  @apply inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[14px] font-medium text-[var(--ink-2)] transition-colors;
+}
+
+.nav-link:hover {
+  @apply bg-[var(--brand-soft)] text-[var(--brand)];
+}
+
+.nav-link[data-active="true"] {
+  @apply bg-[var(--brand)] text-white;
+  box-shadow: 0 6px 16px -6px rgba(81, 69, 229, 0.7);
+}
+
+/* ── Sheet: bảng nhập liệu kiểu Excel ───────────────────────── */
+
+.sheet-wrap {
+  @apply overflow-x-auto rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)];
+  box-shadow: var(--shadow-sm);
+}
+
+.sheet {
+  @apply w-full border-collapse text-left text-[13px];
+}
+
+.sheet thead th {
+  @apply sticky top-0 z-10 whitespace-nowrap border-b border-[var(--line)] bg-[#fbfbfe] px-2.5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-3)];
+}
+
+.sheet tbody td,
+.sheet tfoot td {
+  @apply border-t border-[var(--line-soft)] px-2.5 py-2 align-middle text-[var(--ink)];
+}
+
+.sheet tbody tr:hover {
+  @apply bg-[#fafaff];
+}
+
+.sheet tfoot td {
+  @apply border-t-2 border-[var(--line)] bg-[#fbfbfe] font-bold text-[var(--ink)];
+}
+
+.sheet-add-row {
+  @apply bg-[var(--brand-soft)]/45;
+}
+
+/* Ô nhập trong sheet */
+/* Width do component truyền vào (cn/twMerge) để className ghi đè được */
+.cell {
+  @apply h-8 min-w-0 rounded-lg border border-transparent bg-transparent px-2 text-[13px] text-[var(--ink)] outline-none transition-all;
+}
+
+.cell::placeholder {
+  @apply text-[#c3c8d8];
+}
+
+.cell:hover {
+  @apply border-[var(--line)] bg-[#fafaff];
+}
+
+.cell:focus {
+  @apply border-[var(--brand)] bg-white;
+  box-shadow: 0 0 0 3px rgba(81, 69, 229, 0.13);
+}
+
+.cell-num {
+  @apply text-right font-semibold tabular-nums;
+}
+
+.cell-add {
+  @apply border-[var(--line)] bg-white;
+}
+
+/* Pill giá trị */
+.pill {
+  @apply inline-flex h-7 max-w-full items-center justify-center truncate rounded-lg px-2.5 text-[11.5px] font-bold uppercase tracking-wide;
+}
+
+.sheet-row-drag {
+  @apply cursor-grab text-[#cdd2e1] opacity-0 transition-opacity;
+}
+
+.sheet tbody tr:hover .sheet-row-drag {
+  @apply opacity-100;
+}
+
+.row-del {
+  @apply rounded-lg p-1.5 text-[#cdd2e1] transition-colors;
+}
+
+.row-del:hover {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+/* ── Tabs (segmented) ───────────────────────────────────────── */
+
+.tabs {
+  @apply inline-flex flex-wrap gap-1 rounded-2xl border border-[var(--line)] bg-white p-1;
+  box-shadow: var(--shadow-sm);
+}
+
+.tab {
+  @apply inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[13px] font-semibold text-[var(--ink-2)] transition-colors;
+}
+
+.tab:hover {
+  @apply bg-[var(--brand-soft)] text-[var(--brand)];
+}
+
+.tab[data-active="true"] {
+  @apply bg-[var(--brand)] text-white;
+}
+
+.tab-count {
+  @apply rounded-md bg-[#eef0f7] px-1.5 text-[11px] font-bold text-[var(--ink-3)];
+}
+
+.tab[data-active="true"] .tab-count {
+  @apply bg-white/25 text-white;
+}
+
+/* ── Rows kiểu "danh sách giao dịch" ────────────────────────── */
+
+.list-row {
+  @apply flex items-center gap-3 border-b border-[var(--line-soft)] px-4 py-3 transition-colors last:border-0;
+}
+
+.list-row:hover {
+  @apply bg-[#fafaff];
+}
+
+.avatar {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white;
+}
+
+/* ── Bảng công thức (Production / Tài chính) ────────────────── */
+
+.calc-section {
+  @apply flex items-center gap-2 rounded-xl bg-[#131829] px-3 py-2 text-[12px] font-bold uppercase tracking-wider text-white;
+}
+
+.calc-row {
+  @apply flex items-center gap-3 border-b border-[var(--line-soft)] py-2 last:border-0;
+}
+
+.calc-label {
+  @apply min-w-0 flex-1 text-[13px] text-[var(--ink-2)];
+}
+
+.calc-value {
+  @apply w-[160px] shrink-0 text-right text-[14px] font-bold tabular-nums text-[var(--ink)];
+}
+
+/* Ô công thức (read-only) */
+.calc-formula {
+  @apply flex h-9 w-[160px] shrink-0 items-center justify-end rounded-lg bg-[#f7f8fc] px-2.5 text-[14px] font-bold tabular-nums text-[var(--brand)];
+}
+
+.badge-input {
+  @apply rounded-md bg-[var(--warn-soft)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--warn)];
+}
+
+.badge-auto {
+  @apply rounded-md bg-[var(--brand-soft)] px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--brand)];
+}
+
+/* ── Field: ô nhập to, dễ bấm trên điện thoại ───────────────── */
+
+.field {
+  @apply h-12 w-full rounded-xl border border-[var(--line)] bg-white px-3.5 text-[15px] text-[var(--ink)] outline-none transition-all;
+}
+
+.field::placeholder {
+  @apply text-[#c3c8d8];
+}
+
+.field:focus {
+  @apply border-[var(--brand)];
+  box-shadow: 0 0 0 3px rgba(81, 69, 229, 0.13);
+}
+
+.field-money {
+  @apply text-right text-[17px] font-bold tabular-nums;
+}
+
+/* ── Progress ───────────────────────────────────────────────── */
+
+.bar {
+  @apply h-2 overflow-hidden rounded-full bg-[#eceef6];
+}
+
+.bar-fill {
+  @apply h-full rounded-full transition-all;
+}
+
+/* ── Misc ───────────────────────────────────────────────────── */
+
+.input-money {
+  @apply text-right font-semibold tabular-nums;
+}
+
+.table-wrap {
+  @apply overflow-x-auto rounded-[var(--radius)] border border-[var(--line)] bg-[var(--surface)];
+  box-shadow: var(--shadow-sm);
+}
+
+.data-table {
+  @apply w-full min-w-[720px] border-collapse text-left text-[13.5px];
+}
+
+.data-table th {
+  @apply sticky top-0 border-b border-[var(--line)] bg-[#fbfbfe] px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-3)];
+}
+
+.data-table td {
+  @apply border-t border-[var(--line-soft)] px-3 py-2.5 align-middle text-[var(--ink)];
+}
+
+.data-table tr:hover td {
+  @apply bg-[#fafaff];
+}
+
+.money-pos {
+  @apply font-bold tabular-nums text-[var(--good)];
+}
+
+.money-neg {
+  @apply font-bold tabular-nums text-[var(--bad)];
+}
+
+.money-warn {
+  @apply font-bold tabular-nums text-[var(--warn)];
+}

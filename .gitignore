@@ -1,0 +1,46 @@
+# OS
+.DS_Store
+**/.DS_Store
+
+# Editor / agent
+.claude/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node / Next (money-app)
+money-app/node_modules/
+money-app/.next/
+money-app/out/
+money-app/build/
+money-app/coverage/
+money-app/.vercel/
+money-app/*.tsbuildinfo
+money-app/next-env.d.ts
+
+# Env & secrets
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Local DB
+**/*.db
+**/*.db-journal
+money-app/prisma/dev.db
+
+# Dashboard backups (local only)
+dashboard-v2.bak-*.html
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Misc
+*.pem
+.cache/
