@@ -3941,6 +3941,11 @@ const rowTong    = r => (+r.cp||0) + (+r.otTien||0);
 const rowPaid    = r => !!r.nguon && r.nguon !== 'chua_tra';   /* đã thanh toán */
 const rowConTra  = r => rowPaid(r) ? 0 : rowTong(r);
 const isProducer = r => r.loai === 'producer';
+/* Dòng mẫu chỉ có tên hạng mục chưa tính là đã điền. Có tiền/người/QR/trạng thái mới nổi lên đầu. */
+const prodHasEntry = r => !!(
+  (+r.cp||0) || (+r.otTien||0) || r.crewId || String(r.flText||'').trim() ||
+  String(r.note||'').trim() || r.qr || rowPaid(r)
+);
 const togglePaid = r => { r.nguon = rowPaid(r) ? 'chua_tra' : 'da_tra'; delete r.paid; };
 /* nút tick thanh toán dùng chung cho bảng chính / popup Producer / dòng nhập nhanh */
 const tickHTML = (paid, attr) => `<button class="tickbtn${paid?' on':''}" ${attr}
@@ -4117,7 +4122,8 @@ let QA_NEW = {fl:'', ten:'', cp:0, ot:0, note:''};
 function saveQuickRow(p){
   const g = QA_NEW;
   if(!g.ten && !g.fl && !g.cp){ $('qa-ten').focus(); return; }
-  const c = S.crew.find(x => NORM(x.ten) === NORM(g.fl));
+  /* Không cho chuỗi trống khớp nhầm một contact trống trong danh bạ. */
+  const c = g.fl.trim() && S.crew.find(x => NORM(x.ten) === NORM(g.fl));
   p.prod.push(prodRow({
     ten:   g.ten || (c ? (c.vitri || c.ten) : g.fl),
     flText: c ? '' : g.fl,
@@ -4162,7 +4168,9 @@ function renderPdStrip(p){
   /* Khi đang lọc công nợ, các dòng Producer đã được đưa thẳng lên bảng chính. */
   if(PROD_FILTER !== 'all'){ host.hidden = true; host.innerHTML = ''; return; }
   host.hidden = false;
-  const rows = p.prod.filter(isProducer);
+  const rows = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r))
+    .sort((a,b)=>Number(prodHasEntry(b.r))-Number(prodHasEntry(a.r)) || a.i-b.i)
+    .map(o=>o.r);
   const tong = rows.reduce((s,r)=>s+rowTong(r),0);
   const paid = rows.filter(rowPaid).length;
   const open = !!p._pdOpen;
@@ -4268,13 +4276,18 @@ function renderProd(p){
       const d = typeof x === 'string' ? x.localeCompare(y) : x-y;
       return (d || a.i-b.i) * PROD_SORT.dir;
     });
+  } else {
+    /* Mặc định: dòng đã nhập nổi lên trên, dòng mẫu chưa có dữ liệu nằm dưới. */
+    prodRows = prodRows.slice().sort((a,b)=>
+      Number(prodHasEntry(b.r))-Number(prodHasEntry(a.r)) || a.i-b.i);
   }
   const canDrag = PROD_FILTER === 'all' && PROD_SORT.col === 'manual';
   /* n = STT hiển thị (1…N liên tục); i = index thật trong p.prod để bind/xoá */
   $('pro-prod-body').innerHTML = prodRows.length ? prodRows.map(({r,i}, n)=>{
     const c = r.crewId && crewById(r.crewId);
     return `
-    <tr class="${rowPaid(r)?'is-paid ':''}${isProducer(r)?'is-pd':''}" draggable="${canDrag?'true':'false'}" data-row="${i}">
+    <tr class="${rowPaid(r)?'is-paid ':''}${isProducer(r)?'is-pd':''}" draggable="${canDrag?'true':'false'}"
+        data-row="${i}" data-prod-filled="${prodHasEntry(r)?'1':'0'}">
       <td class="stt${canDrag?' drag-handle':''}" data-label="#" title="${canDrag?'Kéo để sắp xếp':'Đang lọc / sắp xếp'}"><span class="rownum">${n+1}</span>
         <button class="rowdel" data-del="${i}" title="Xoá dòng này">✕</button></td>
 
@@ -4382,6 +4395,12 @@ function renderProd(p){
       });
       inp.addEventListener('keydown', e=>{ if(e.key==='Enter') e.target.blur(); });
     }
+    /* Sau khi điền xong và rời ô, đưa dòng từ nhóm mẫu lên nhóm đã nhập. */
+    inp.addEventListener('blur', e=>{
+      const tr = e.target.closest('tr'), r = p.prod[+e.target.dataset.i];
+      if(PROD_FILTER==='all' && PROD_SORT.col==='manual' && tr?.dataset.prodFilled==='0' && r && prodHasEntry(r))
+        renderProd(p);
+    });
   });
   body.querySelectorAll('[data-pick]').forEach(b=>{
     b.addEventListener('click', ()=> pickCrew(p, +b.dataset.pick));
