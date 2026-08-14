@@ -1414,12 +1414,43 @@ input.datecell.bad{border-color:var(--red);background:var(--red-soft)}
 .land-simple{display:grid;grid-template-columns:minmax(300px,.82fr) minmax(560px,1.58fr);gap:12px;align-items:stretch}
 .land-simple .section{display:flex;flex-direction:column}
 .land-simple .formrow{grid-template-columns:1fr 138px}
-.land-simple .land-result .total{margin-top:auto}
+.land-simple .land-result{min-width:0}
+.land-simple .land-result .total{margin-top:12px}
+.land-fixed-status{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;
+  padding:8px 10px;border-radius:9px;background:var(--green-soft);color:var(--green);font-size:10.5px;font-weight:750}
+.land-fixed-status b{padding:2px 7px;border-radius:20px;background:var(--card);color:var(--green);font-size:9.5px;text-transform:uppercase;letter-spacing:.35px}
+.land-cashflow{display:grid;grid-template-columns:minmax(0,1fr) 20px minmax(0,1fr) 20px minmax(0,1fr);
+  gap:7px;align-items:stretch;min-width:0}
+.land-flow-card{min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:10px;
+  padding:13px;border:1px solid var(--border);border-radius:11px;background:var(--bg2)}
+.land-flow-card>span,.land-flow-head>span{font-size:11px;font-weight:750;color:var(--sub);text-transform:uppercase;letter-spacing:.3px}
+.land-flow-card>input{width:100%;min-width:0;height:38px;box-sizing:border-box;text-align:right}
+.land-flow-card>strong{display:block;text-align:right;color:var(--text);font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.land-flow-card.loan>strong{color:var(--accent)}
+.land-flow-op{display:grid;place-items:center;color:var(--faint);font-size:21px;font-weight:800}
+.land-flow-head{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0}
+.land-rate-input{display:flex;align-items:center;gap:4px;flex:0 0 auto;padding:2px 6px;border:1px solid var(--border);
+  border-radius:8px;background:var(--card);color:var(--sub);font-size:11px;font-weight:700}
+.land-rate-input input{width:42px;border:0;outline:0;background:transparent;text-align:right;color:var(--text);font:inherit}
+.land-loan-link{border:0;background:transparent;color:var(--accent);font:inherit;font-size:9.5px;font-weight:750;cursor:pointer;padding:0}
+.land-loan-link:hover{text-decoration:underline}
+.land-loan-interest{display:flex;align-items:center;justify-content:space-between;gap:6px;padding-top:7px;
+  border-top:1px solid var(--border2);color:var(--faint);font-size:9.5px}
+.land-loan-interest b{color:var(--amber);font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.land-equation{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:48px;
+  margin-top:12px;padding:10px 13px;border-radius:11px;background:var(--accent-soft)}
+.land-equation span{font-size:11px;font-weight:700;color:var(--sub)}
+.land-equation span b{color:var(--accent)}
+.land-equation>strong{font-size:19px;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
 .land-sale-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
 .land-sale-pane{min-width:0;padding:7px 10px;border:1px solid var(--border);border-radius:11px;background:var(--bg2)}
 .land-sale-pane .formrow:first-child,.land-sale-pane .loan-summary:first-child{margin-top:0}
 .land-return-note{font-size:10px;color:var(--faint);line-height:1.35;margin:-2px 0 7px}
 @media(max-width:920px){.land-simple{grid-template-columns:1fr}.land-sale-columns{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .land-cashflow{grid-template-columns:1fr}.land-flow-op{display:none}
+  .land-equation{align-items:flex-start;flex-direction:column}.land-equation>strong{align-self:flex-end}
+}
 .loan-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin:0 0 9px;
   padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg2);cursor:pointer;text-align:left}
 .loan-summary:hover{border-color:var(--accent);background:var(--accent-soft)}
@@ -2371,8 +2402,8 @@ body.public-mode #panel-bs-public{display:none!important}
   <div class="land-simple">
     <div class="section compact">
       <div class="sec-head"><div class="badge">1</div><h2>Thông tin tất toán</h2></div>
-      <div class="formrow"><label>Giá bán chốt A Trường</label>
-        <input type="text" class="money tune" id="t_e15" value="1260000000"></div>
+      <div class="land-fixed-status"><span>Đã tất toán · không tham gia phép tính tương lai</span><b>Cố định</b></div>
+      <div class="line"><span>Giá bán chốt A Trường</span><b id="t_fixed_settle"></b></div>
       <div class="line"><span>Số tiền A Trường lời</span><b id="t_truong_profit"></b></div>
       <div class="line"><span>(+) Vốn gốc trả lại</span><b id="t_truong_principal"></b></div>
       <div class="total accent"><span>Số tiền trả lại</span><b id="t_truong_return"></b></div>
@@ -2380,25 +2411,26 @@ body.public-mode #panel-bs-public{display:none!important}
     </div>
     <div class="section compact land-result">
       <div class="sec-head"><div class="badge">2</div><h2>Lợi nhuận khi bán đất</h2></div>
-      <div class="land-sale-columns">
-       <div class="land-sale-pane">
-        <div class="formrow"><label>Giá bán tương lai</label>
-          <input type="text" class="money tune" id="land_future_sale" value="1260000000"></div>
-        <div class="line"><span>Giá bán đất khi mua</span><b id="land-buy-price"></b></div>
-        <div class="line"><span>Chênh lệch giá đất (bán − mua)</span><b id="land-price-diff"></b></div>
-        <div class="formrow"><label>Hoa hồng sale (%)</label>
-          <input type="number" class="plain" id="land_sale_commission_rate" min="0" step="0.1" value="2"></div>
-        <div class="line"><span>(−) Hoa hồng sale</span><b id="t_sale_commission"></b></div>
-       </div>
-       <div class="land-sale-pane">
-        <div class="loan-summary" data-open="debt-fold" title="Mở lịch trả nợ">
-          <div><span>Thông tin vay</span></div>
-          <div class="loan-interest"><span>Lãi tháng này</span><b id="t_loan_interest"></b></div>
+      <div class="land-cashflow">
+        <div class="land-flow-card future">
+          <span>Giá bán tương lai</span>
+          <input type="text" class="money tune" id="land_future_sale" value="1260000000">
         </div>
-        <div class="line"><span>Khoản vay còn</span><b id="t_current_loan"></b></div>
-       </div>
+        <div class="land-flow-op" aria-hidden="true">−</div>
+        <div class="land-flow-card commission">
+          <div class="land-flow-head"><span>Hoa hồng sale</span>
+            <label class="land-rate-input"><input type="number" id="land_sale_commission_rate" min="0" step="0.1" value="2"><i>%</i></label>
+          </div>
+          <strong id="t_sale_commission"></strong>
+        </div>
+        <div class="land-flow-op" aria-hidden="true">−</div>
+        <div class="land-flow-card loan">
+          <div class="land-flow-head"><span>Khoản vay còn</span><button class="land-loan-link" data-open="debt-fold">Xem lịch vay</button></div>
+          <strong id="t_current_loan"></strong>
+          <small class="land-loan-interest"><span>Lãi tháng này</span><b id="t_loan_interest"></b></small>
+        </div>
       </div>
-      <div class="total accent"><span>Còn về tay</span><b id="t_receive"></b></div>
+      <div class="land-equation"><span><b>Giá bán tương lai</b> − Hoa hồng − Vay còn lại</span><strong id="t_receive"></strong></div>
     </div>
 
     <b id="q_price" hidden></b><b id="q_cost" hidden></b><b id="q_debt" hidden></b>
@@ -5470,7 +5502,8 @@ function calc(){
   }
 
   /* ============== Đất — giá bán trừ hoa hồng sale và dư nợ còn lại ============== */
-  const settlePrice = money('t_e15');
+  /* Phần tất toán A Trường đã chốt: cố định, không còn phụ thuộc giả định bán tương lai. */
+  const settlePrice = 1260000000;
   const landBuyPrice = 950000000;
   /* Giá bán tương lai là giả định riêng, có thể chỉnh mà không đổi giá chốt A Trường. */
   const futureSale = money('land_future_sale');
@@ -5480,11 +5513,9 @@ function calc(){
   const saleCommission = futureSale * saleRate / 100;
   const equityAfterLoan = futureSale - loanOutstanding;
   const takeHome = futureSale - saleCommission - loanOutstanding;
-  /* Anh Trường góp 250/950 phần giá mua; vốn tự có thực trả lại là 25 triệu. */
-  const truongShare = 250000000 / landBuyPrice;
+  /* Các số tất toán cố định theo biên bản đã chốt. */
   const truongPrincipal = 25000000;
-  const settleCommission = settlePrice * saleRate / 100;
-  const truongProfit = (settlePrice - landBuyPrice - settleCommission) * truongShare;
+  const truongProfit = 74947368;
   const truongReturn = truongPrincipal + truongProfit;
 
   set('t_equity_after_loan', equityAfterLoan, true);
@@ -5493,6 +5524,7 @@ function calc(){
   set('t_loan_outstanding', loanOutstanding); set('t_loan_interest', loanInterest);
   set('t_sale_total', futureSale); set('t_sale_commission', saleCommission);
   set('t_current_loan', loanOutstanding); set('t_receive', takeHome, true);
+  set('t_fixed_settle', settlePrice);
   set('t_truong_profit', truongProfit, true); set('t_truong_principal', truongPrincipal);
   set('t_truong_return', truongReturn, true);
   set('q_price', futureSale); set('q_cost', saleCommission); set('q_debt', loanOutstanding);
