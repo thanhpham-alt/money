@@ -5794,12 +5794,12 @@ document.addEventListener('click', e=>{
   }
 });
 
-/* ---------- 2 popup ở header: Góp vốn đất · Nợ thẻ ----------
-   Chúng nằm trong panel Tổng quan trong HTML cho dễ đọc, nhưng .modal là position:fixed
+/* ---------- popup ở header: Góp vốn đất · Freelancer · Nợ thẻ ----------
+   Chúng nằm trong các panel trong HTML cho dễ đọc, nhưng .modal là position:fixed
    nên phải chuyển ra ngoài body, không thì tab khác ẩn panel là popup cũng mất. */
-['land-fold','debt-fold'].forEach(id => document.body.appendChild($(id)));
+['land-fold','crew-modal','debt-fold'].forEach(id => document.body.appendChild($(id)));
 const openPop  = id => { const m = $(id); if(m) m.hidden = false; };
-const closePop = ()  => document.querySelectorAll('.modal[id$="-fold"]').forEach(m => m.hidden = true);
+const closePop = ()  => document.querySelectorAll('.modal[id$="-fold"], #crew-modal').forEach(m => m.hidden = true);
 $('open-land').addEventListener('click', ()=> openPop('land-fold'));
 $('open-crew').addEventListener('click', ()=>{ renderCrew(); $('crew-modal').hidden = false; });
 $('open-debt').addEventListener('click', ()=> openPop('debt-fold'));
