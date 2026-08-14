@@ -1254,7 +1254,7 @@ tr:hover .rowdel{opacity:1;pointer-events:auto}
 .atan-flow-card small{display:block;margin-top:3px;font-size:9.5px;color:var(--faint)}
 .atan-flow-card.af-total{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,var(--border))}
 .atan-flow-card.af-total .af-label,.atan-flow-card.af-total b{color:var(--accent)}
-.atan-flow-parts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.atan-flow-parts{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:7px}
 .atan-flow-parts .atan-flow-card{padding:9px 10px}
 .atan-flow-parts .atan-flow-card b{font-size:14px}
 .atan-flow-card.af-vat{background:var(--blue-soft);border-color:color-mix(in srgb,var(--blue) 22%,var(--border))}
@@ -1263,6 +1263,8 @@ tr:hover .rowdel{opacity:1;pointer-events:auto}
 .atan-flow-card.af-fee .af-label,.atan-flow-card.af-fee b{color:var(--amber)}
 .atan-flow-card.af-atan{background:color-mix(in srgb,var(--accent-soft) 62%,var(--card));border-color:color-mix(in srgb,var(--accent) 18%,var(--border))}
 .atan-flow-card.af-atan .af-label,.atan-flow-card.af-atan b{color:var(--accent)}
+.atan-flow-card.af-ot{background:var(--amber-soft);border-color:color-mix(in srgb,var(--amber) 25%,var(--border))}
+.atan-flow-card.af-ot .af-label,.atan-flow-card.af-ot b{color:var(--amber)}
 .atan-flow-card.af-actual{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 28%,var(--border))}
 .atan-flow-card.af-actual .af-label,.atan-flow-card.af-actual b{color:var(--green)}
 .atan-config{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:10px}
@@ -3975,16 +3977,18 @@ function proCalc(p){
   const atanRate = p.atanRate == null ? 22 : +p.atanRate;
   const atanAuto = (p.contract - prodSum - otSum - fee) * atanRate/100;
   const atan     = p.atanAuto === false ? (+p.atan||0) : atanAuto;
-  const atanTong = vat + fee + atan;   /* chi phí tổng A Tân   = VAT + phí xuất + A Tân (chỉ hiển thị) */
-  const atanThuc = fee + atan;         /* chi phí thực tế A Tân = phí xuất + A Tân */
+  /* Popup A Tân liên kết OT để thấy đủ khoản A Tân đang gánh.
+     OT vẫn thuộc thucChi bên dưới, nên không cộng lại vào otherCost/net để tránh tính trùng. */
+  const atanTong = vat + fee + atan + otSum; /* tổng hiển thị = VAT + phí xuất + A Tân + OT */
+  const atanThuc = fee + atan + otSum;       /* thực tế hiển thị, không gồm VAT */
   /* CP khác = phí xuất + A Tân (KHÔNG gồm VAT — giữ đúng số đã verify khớp Excel).
      Brief mục 5 liệt kê VAT trong Chi_phi_khac nhưng còn để ngỏ ở câu hỏi #3 → giữ bản Excel. */
   const otherCost = fee + atan;
   const chiPhiKhac = otherCost;
   const totalCost = thucChi + chiPhiKhac;
   const gross = p.contract - thucChi;      /* LN gộp  = HĐ − thực chi */
-  /* LN ròng = Tổng phí HĐ − Chi phí thực tế A Tân (phí xuất + A Tân) − Chi phí sản xuất (gồm OT) */
-  const net   = p.contract - atanThuc - thucChi;
+  /* LN ròng: OT đã nằm trong thucChi, không lấy atanThuc vì atanThuc cũng hiển thị OT. */
+  const net   = p.contract - otherCost - thucChi;
 
   /* CÔNG TY ỨNG: luôn là số NHẬP TAY (brief mục 5) — bỏ chế độ tự tính theo %.
      advRate chỉ còn để hiện gợi ý. */
@@ -5050,7 +5054,7 @@ function renderProDetail(){
               <div class="atan-flow">
                 <div class="atan-flow-card af-total">
                   <div class="af-top"><span class="af-label">Chi phí tổng A Tân</span><b id="pro-atan-tong"></b></div>
-                  <small>Hoá đơn VAT + Phí xuất hoá đơn + A Tân</small>
+                  <small>Hoá đơn VAT + Phí xuất hoá đơn + A Tân<span id="pro-atan-total-ot-note"></span></small>
                 </div>
                 <div class="atan-flow-parts">
                   <div class="atan-flow-card af-vat">
@@ -5065,10 +5069,14 @@ function renderProDetail(){
                     <div class="af-top"><span class="af-label">A Tân</span><b id="pro-atan-l"></b></div>
                     <small>Phần A Tân được tính / nhập</small>
                   </div>
+                  <div class="atan-flow-card af-ot" id="pro-atan-ot-card" hidden>
+                    <div class="af-top"><span class="af-label">OT liên kết</span><b id="pro-atan-ot"></b></div>
+                    <small>Tự lấy từ bảng chi phí sản xuất</small>
+                  </div>
                 </div>
                 <div class="atan-flow-card af-actual">
                   <div class="af-top"><span class="af-label">Chi phí thực tế A Tân</span><b id="pro-atan-thuc"></b></div>
-                  <small>Phí xuất hoá đơn + A Tân · không gồm VAT</small>
+                  <small>Phí xuất hoá đơn + A Tân<span id="pro-atan-actual-ot-note"></span> · không gồm VAT</small>
                 </div>
               </div>
             </div>
@@ -5436,6 +5444,10 @@ function calc(){
       : '';
     set('pro-fee-l', c.fee); set('pro-vat-l', c.vat); set('pro-atan-l', c.atan);
     set('pro-atan-tong', c.atanTong); set('pro-atan-thuc', c.atanThuc);
+    set('pro-atan-ot', c.otSum);
+    $('pro-atan-ot-card').hidden = c.otSum <= 0;
+    $('pro-atan-total-ot-note').textContent = c.otSum > 0 ? ' + OT' : '';
+    $('pro-atan-actual-ot-note').textContent = c.otSum > 0 ? ' + OT' : '';
     if(ap.atanAuto !== false && document.activeElement !== $('pro-atan-budget'))
       $('pro-atan-budget').value = nf.format(Math.round(c.atan));
     /* công ty ứng — cập nhật realtime */
