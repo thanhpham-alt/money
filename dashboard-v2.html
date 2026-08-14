@@ -1967,22 +1967,23 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .pro-search.has-value .pro-search-clear{display:grid;place-items:center}
 .pro-search-clear:hover{background:var(--red-soft);color:var(--red)}
 
-/* Bảng production — full ngang, 7 cột cân đối */
+/* Bảng production — full ngang, tách riêng Còn trả và Thanh toán */
 #panel-pro .pro-prod-scroll{max-height:none;overflow-x:auto;overflow-y:visible}
-#panel-pro .prod-table{width:100%;min-width:920px;table-layout:fixed}
+#panel-pro .prod-table{width:100%;min-width:1040px;table-layout:fixed}
 #panel-pro .prod-table th,#panel-pro .prod-table td{
   padding:7px 8px;box-sizing:border-box;overflow:hidden;vertical-align:middle
 }
 #panel-pro .prod-table thead th{text-align:center;white-space:nowrap}
 #panel-pro .prod-table tbody td{height:48px}
-/* # · Freelancer · Hạng mục · Chi phí 200 · OT 200 · Trạng thái · QR 100 */
+/* # · Freelancer · Hạng mục · Chi phí · OT · Còn trả · Thanh toán · QR */
 #panel-pro .prod-table th:nth-child(1){width:48px}
 #panel-pro .prod-table th:nth-child(2){width:16%}
 #panel-pro .prod-table th:nth-child(3){width:auto}
-#panel-pro .prod-table th:nth-child(4){width:200px}
-#panel-pro .prod-table th:nth-child(5){width:200px}
-#panel-pro .prod-table th:nth-child(6){width:148px}
-#panel-pro .prod-table th:nth-child(7){width:100px}
+#panel-pro .prod-table th:nth-child(4){width:150px}
+#panel-pro .prod-table th:nth-child(5){width:130px}
+#panel-pro .prod-table th:nth-child(6){width:135px}
+#panel-pro .prod-table th:nth-child(7){width:126px}
+#panel-pro .prod-table th:nth-child(8){width:90px}
 #panel-pro .prod-table td.col-fl{overflow:hidden}
 #panel-pro .prod-table td.stt{text-align:center}
 #panel-pro .prod-table td.stt .rownum{
@@ -2002,8 +2003,8 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   font-variant-numeric:tabular-nums;font-weight:700
 }
 #panel-pro .prod-table tfoot .prod-total-value{text-align:right;padding-right:10px}
-/* QR gọn trong cột 100px — contain + nền trắng, bấm để xem to */
-#panel-pro .prod-table th:nth-child(7){width:100px}
+/* QR gọn trong cột cuối — contain + nền trắng, bấm để xem to */
+#panel-pro .prod-table th:nth-child(8){width:90px}
 #panel-pro .qr-cell{
   width:100%;min-width:0;min-height:0;height:auto;padding:0;
   justify-content:center;align-items:center;border-radius:0;background:transparent
@@ -2039,9 +2040,14 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   background:var(--green-soft);color:var(--green)
 }
 .pro-pay-status.paid span{color:var(--green)}
-.pro-pay-status.unpaid{justify-content:flex-end}
+.pro-pay-status.unpaid{justify-content:center;border-color:color-mix(in srgb,var(--accent) 36%,var(--border));
+  background:var(--accent-soft);color:var(--accent)}
+.pro-pay-status.unpaid span{color:var(--accent)}
 .pro-pay-status.quick{opacity:.55;cursor:not-allowed;justify-content:center}
 .pro-pay-status.quick span{color:var(--faint);font-size:10px}
+.pro-due-amount{display:block;width:100%;text-align:right;color:var(--accent);font-size:11.5px;
+  font-weight:750;white-space:nowrap;font-variant-numeric:tabular-nums}
+.pro-due-amount.paid{color:var(--green)}
 .prod-total-row td{border-top:2px solid var(--border)!important;border-bottom:0!important;background:var(--bg2)!important;padding-top:8px!important;padding-bottom:8px!important}
 .prod-total-label{display:flex;align-items:baseline;gap:7px}.prod-total-label b{font-size:11.5px}.prod-total-label small{color:var(--faint);font-size:9.5px}
 .prod-total-value{text-align:right;font-size:11.5px;font-weight:800;white-space:nowrap}
@@ -2083,7 +2089,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
     font-weight:750;text-transform:uppercase;letter-spacing:.35px}
   #panel-pro .prod-table tbody td.stt{display:none}
   #panel-pro .prod-table tbody td.col-fl,#panel-pro .prod-table tbody td[data-label="Hạng mục"],
-  #panel-pro .prod-table tbody td[data-label="Trạng thái"],#panel-pro .prod-table tbody td[data-label="Thao tác"]{grid-column:1/-1}
+  #panel-pro .prod-table tbody td[data-label="Thanh toán"],#panel-pro .prod-table tbody td[data-label="Thao tác"]{grid-column:1/-1}
   #panel-pro .prod-table tbody td.mid{text-align:left}
   #panel-pro .prod-table tbody .qr-cell{justify-content:flex-start}
   #panel-pro .prod-table tfoot{display:block;margin-top:8px}
@@ -4056,7 +4062,8 @@ function renderQuickRow(p){
       <td data-label="Hạng mục"><input class="plain" id="qa-ten" placeholder="Nhập hạng mục…" value="${esc(g.ten)}"></td>
       <td class="num" data-label="Chi phí"><input class="plain num money" id="qa-cp" placeholder="0" value="${g.cp?nf.format(g.cp):''}"></td>
       <td class="mid" data-label="OT"><input class="plain num money cell-ot" id="qa-ot" placeholder="0" value="${g.ot?nf.format(g.ot):''}"></td>
-      <td data-label="Trạng thái"><button class="pro-pay-status quick" disabled><span>Chưa lưu</span></button></td>
+      <td data-label="Còn trả"><span class="pro-due-amount" id="qa-due">${fmt((+g.cp||0)+(+g.ot||0))}</span></td>
+      <td data-label="Thanh toán"><button class="pro-pay-status quick" disabled><span>Chưa lưu</span></button></td>
       <td class="mid" data-label="Thao tác"><button class="qa-save" id="qa-save" title="Lưu (Enter)">Lưu</button></td>
     </tr>`;
 
@@ -4065,8 +4072,9 @@ function renderQuickRow(p){
     const el = get(id); if(!el) return;
     el.addEventListener('input', e=>{ QA_NEW[id.slice(3)] = e.target.value; });
   });
-  get('qa-cp').addEventListener('input', e=>{ liveFormatMoney(e.target); QA_NEW.cp = parseNum(e.target.value); });
-  get('qa-ot').addEventListener('input', e=>{ liveFormatMoney(e.target); QA_NEW.ot = parseNum(e.target.value); });
+  const updateQuickDue = ()=>{ get('qa-due').textContent = fmt((+QA_NEW.cp||0)+(+QA_NEW.ot||0)); };
+  get('qa-cp').addEventListener('input', e=>{ liveFormatMoney(e.target); QA_NEW.cp = parseNum(e.target.value); updateQuickDue(); });
+  get('qa-ot').addEventListener('input', e=>{ liveFormatMoney(e.target); QA_NEW.ot = parseNum(e.target.value); updateQuickDue(); });
   get('qa-save').addEventListener('click', ()=> saveQuickRow(p));
   host.querySelectorAll('input').forEach(inp=>
     inp.addEventListener('keydown', e=>{ if(e.key === 'Enter') saveQuickRow(p); }));
@@ -4138,7 +4146,7 @@ function renderPdStrip(p){
       <div class="tablewrap">
         <table class="prod-table pd-table">
           <thead><tr><th class="stt">#</th><th>Hạng mục</th><th class="num">Chi phí</th>
-            <th class="mid">OT</th><th>Trạng thái / Còn trả</th><th>Ghi chú</th><th></th></tr></thead>
+            <th class="mid">OT</th><th>Còn trả</th><th>Thanh toán</th><th>Ghi chú</th><th></th></tr></thead>
           <tbody id="pd-body"></tbody>
         </table>
       </div>
@@ -4160,12 +4168,13 @@ function renderPdStrip(p){
         <td class="num"><input class="plain num money" data-i="${i}" data-k="cp" value="${nf.format(+r.cp||0)}"></td>
         <td class="mid"><input class="plain num money cell-ot${(+r.otTien)?' has-val':''}"
               data-i="${i}" data-k="otTien" value="${(+r.otTien)?nf.format(+r.otTien):''}" placeholder="0"></td>
+        <td><span class="pro-due-amount ${rowPaid(r)?'paid':''}">${fmt(rowConTra(r))}</span></td>
         <td><button class="pro-pay-status ${rowPaid(r)?'paid':'unpaid'}" data-paid="${i}">
-          ${rowPaid(r)?'<span>✓ Đã thanh toán</span>':'<b>'+fmt(rowConTra(r))+'</b>'}</button></td>
+          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span></button></td>
         <td><input class="plain note" data-i="${i}" data-k="note" value="${esc(r.note)}" placeholder="—"></td>
         <td style="width:34px"><button class="rowbtn" data-del="${i}">✕</button></td>
       </tr>`).join('')
-      : '<tr><td colspan="7"><div class="empty">Chưa có khoản nào.</div></td></tr>';
+      : '<tr><td colspan="8"><div class="empty">Chưa có khoản nào.</div></td></tr>';
 
     $('pd-body').querySelectorAll('input.plain').forEach(inp=>{
       const isMoney = inp.classList.contains('money');
@@ -4259,9 +4268,12 @@ function renderProd(p){
       <td class="mid" data-label="OT"><input class="plain num money cell-ot${(+r.otTien)?' has-val':''}"
             data-i="${i}" data-k="otTien" value="${(+r.otTien)?nf.format(+r.otTien):''}" placeholder="0"></td>
 
-      <td class="pro-status-cell" data-label="Trạng thái"><button class="pro-pay-status ${rowPaid(r)?'paid':'unpaid'}" data-paid="${i}"
+      <td data-label="Còn trả"><span class="pro-due-amount ${rowPaid(r)?'paid':''}">${fmt(rowConTra(r))}</span></td>
+
+      <td class="pro-status-cell" data-label="Thanh toán"><button class="pro-pay-status ${rowPaid(r)?'paid':'unpaid'}" data-paid="${i}"
+            aria-pressed="${rowPaid(r)?'true':'false'}"
             title="${rowPaid(r)?'Đã thanh toán — bấm để chuyển về chưa trả':'Chưa thanh toán — bấm để đánh dấu đã trả'}">
-          ${rowPaid(r)?'<span>✓ Đã thanh toán</span>':'<b class="contra">'+fmt(rowConTra(r))+'</b>'}
+          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span>
         </button></td>
 
       <td class="mid" data-label="QR"><div class="qr-cell" data-qrcell="${i}">
@@ -4271,7 +4283,7 @@ function renderProd(p){
       </div></td>
 
     </tr>`;
-  }).join('') : `<tr><td colspan="7"><div class="empty">${searchNeedle?'Không tìm thấy freelancer phù hợp.':PROD_FILTER==='paid'?'Chưa có khoản đã thanh toán.':PROD_FILTER==='unpaid'?'Không còn khoản chưa thanh toán.':'Chưa có khoản chi.'}</div></td></tr>`;
+  }).join('') : `<tr><td colspan="8"><div class="empty">${searchNeedle?'Không tìm thấy freelancer phù hợp.':PROD_FILTER==='paid'?'Chưa có khoản đã thanh toán.':PROD_FILTER==='unpaid'?'Không còn khoản chưa thanh toán.':'Chưa có khoản chi.'}</div></td></tr>`;
 
   const body = $('pro-prod-body');
   document.querySelectorAll('[data-psort]').forEach(th=>{
@@ -4777,8 +4789,8 @@ function pickCrew(p, i){
 /* cập nhật cột "Còn trả" mà không render lại (giữ con trỏ đang gõ) */
 function paintProdRow(p){
   $('pro-prod-body').querySelectorAll('tr').forEach(tr=>{
-    const c = tr.querySelector('.contra'), r = p.prod[+tr.dataset.row];
-    if(c && r) c.textContent = rowPaid(r) ? '✓ đã trả' : fmt(rowConTra(r));
+    const c = tr.querySelector('.pro-due-amount'), r = p.prod[+tr.dataset.row];
+    if(c && r) c.textContent = fmt(rowConTra(r));
   });
 }
 
@@ -4958,7 +4970,8 @@ function renderProDetail(){
               <th class="prod-sort" data-psort="item">Hạng mục <span class="ps-ar">⇅</span></th>
               <th class="num prod-sort" data-psort="cost">Chi phí <span class="ps-ar">⇅</span></th>
               <th class="mid prod-sort" data-psort="ot">OT <span class="ps-ar">⇅</span></th>
-              <th class="prod-sort" data-psort="due">Trạng thái / Còn trả <span class="ps-ar">⇅</span></th>
+              <th class="num prod-sort" data-psort="due">Còn trả <span class="ps-ar">⇅</span></th>
+              <th class="prod-sort" data-psort="paid">Thanh toán <span class="ps-ar">⇅</span></th>
               <th class="mid prod-sort" data-psort="qr">QR <span class="ps-ar">⇅</span></th>
             </tr></thead>
             <tbody id="pro-quick"></tbody>
@@ -4968,6 +4981,7 @@ function renderProDetail(){
               <td class="prod-total-value" id="pro-foot-cost">0 ₫</td>
               <td class="prod-total-value ot" id="pro-foot-ot">0 ₫</td>
               <td class="prod-total-value due" id="pro-foot-due">0 ₫</td>
+              <td></td>
               <td></td>
             </tr></tfoot>
           </table>
