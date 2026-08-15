@@ -438,6 +438,12 @@ input.locked:focus{box-shadow:none;border-color:var(--border)}
 .jtab:hover{color:var(--text)}
 .jtab.active{background:var(--card);border-color:var(--border);color:var(--accent);box-shadow:var(--shadow)}
 .jtab.active b{background:var(--accent);color:#fff}
+.jtab.jtab-chi{padding:6px 10px;font-size:12px}
+.jtab.jtab-chi.active{color:var(--red);border-color:color-mix(in srgb,var(--red) 28%,var(--border))}
+.jtab.jtab-chi.active b{background:var(--red);color:#fff}
+.job-chi-panel{margin-top:8px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden}
+.job-chi-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border2);background:var(--bg2)}
+.job-chi-bar .hint{font-size:12px;color:var(--faint)}
 .jt-sum{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 .job-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
 .job-table th.sortable:hover{color:var(--accent)}
@@ -2502,7 +2508,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="badge">📅</div>
       <h2>Hằng ngày</h2>
       <div class="right">
-        <input type="file" id="daily-file" accept="image/*" hidden>
+        <input type="file" id="daily-file" accept="image/*" multiple hidden>
         <button class="iconbtn" type="button" id="daily-upload">⬆ Upload bill (Gemini)</button>
       </div>
     </div>
@@ -2666,6 +2672,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="jtabs">
         <button class="jtab active" data-jview="chua">Job / Linh tinh <b id="jt-n-chua">0</b></button>
         <button class="jtab" data-jview="roi">✅ Đã thu <b id="jt-n-roi">0</b></button>
+        <button class="jtab jtab-chi" data-jview="chi" title="Ảnh chuyển khoản — trừ tiền hiện có">Đã chi <b id="jt-n-chi">0</b></button>
       </div>
       <div class="jh-stats">
         <span class="jhs"><i>Số job</i><b id="jb-count">0</b></span>
@@ -2677,7 +2684,16 @@ body.public-mode #panel-bs-public{display:none!important}
     <b id="jb-cost" hidden></b><b id="jb-tag" hidden></b><span id="job-meta" hidden></span>
 
     <datalist id="agency-dl"></datalist>
-    <div class="tablewrap">
+    <div class="job-chi-panel" id="job-chi-panel" hidden>
+      <div class="job-chi-bar">
+        <input type="file" id="job-chi-file" accept="image/*" multiple hidden>
+        <button class="iconbtn" type="button" id="job-chi-upload">⬆ Ảnh CK (Gemini)</button>
+        <span class="hint">Chọn ảnh chuyển khoản trên điện thoại — trừ ngay Tiền hiện có</span>
+      </div>
+      <div class="daily-status" id="job-chi-status">Chưa có khoản đã chi.</div>
+      <div class="daily-list" id="job-chi-list" hidden></div>
+    </div>
+    <div class="tablewrap" id="job-tablewrap">
       <table class="job-table">
         <thead><tr><th class="stt">#</th>
           <th class="sortable" data-sort="0">Tên Job</th>
@@ -4353,13 +4369,17 @@ function renderJobs(){
     S.jobs.splice(+e.currentTarget.dataset.jdel, 1); renderJobs(); calc();
   }));
 
-  /* 2 tab + số đếm */
+  /* 3 tab + số đếm */
   if($('jt-n-chua')){
     $('jt-n-chua').textContent = chua.length;
     $('jt-n-roi').textContent  = roi.length;
     document.querySelectorAll('.jtab').forEach(t=>
       t.classList.toggle('active', t.dataset.jview === JVIEW));
   }
+  const chiOn = JVIEW === 'chi';
+  if($('job-tablewrap')) $('job-tablewrap').hidden = chiOn;
+  if($('job-chi-panel')) $('job-chi-panel').hidden = !chiOn;
+  if(chiOn){ renderChiPanel(); return; }
   /* mũi tên trên tiêu đề cột đang sắp xếp */
   document.querySelectorAll('.job-table th.sortable').forEach(th=>{
     const on = +th.dataset.sort === JSORT.col;
@@ -6698,6 +6718,7 @@ function isBluescopeHost(){
 })();
 /* ================= Hằng ngày + Gemini OCR ================= */
 const DAILY_KIND = { job:'Job linh tinh', income:'Đã thu', expense:'Đã chi' };
+let DAILY_CACHE = { items:[], totals:{ income:0, expense:0, job:0 } };
 function fileToBase64(file){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
@@ -6709,107 +6730,166 @@ function fileToBase64(file){
     reader.readAsDataURL(file);
   });
 }
+function applyDailyCash(item, sign){
+  const amt = Math.round(+item.amount || 0);
+  if(!amt) return;
+  if(item.kind === 'expense') addToCashOnHand(-amt * sign);
+  else if(item.kind === 'income') addToCashOnHand(amt * sign);
+  calc();
+}
+function dailyPosted(item){
+  return String(item.note||'').includes('__cash:1');
+}
+function renderDailyRows(host, items, emptyText){
+  if(!host) return;
+  if(!items.length){
+    host.innerHTML = '';
+    host.hidden = true;
+    return emptyText;
+  }
+  host.hidden = false;
+  const groups = new Map();
+  items.forEach(it=>{
+    const day = String(it.occurredAt||'').slice(0,10);
+    if(!groups.has(day)) groups.set(day, []);
+    groups.get(day).push(it);
+  });
+  host.innerHTML = [...groups.entries()].map(([day, rows])=>{
+    const label = day ? new Date(day+'T00:00:00').toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'}) : '—';
+    return `<div class="daily-day">${esc(label)}</div>` + rows.map(it=>{
+      const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
+      const sign = it.kind==='expense' ? '−' : '+';
+      const meta = [it.bank, it.bankRef ? '#'+it.bankRef : '', it.source==='ocr'?'OCR':'Nhập tay'].filter(Boolean).join(' · ');
+      return `<div class="daily-row">
+        <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
+        <div class="desc"><b>${esc(it.description||'—')}</b><i>${esc(meta)}</i></div>
+        <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
+        <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
+      </div>`;
+    }).join('');
+  }).join('');
+  host.querySelectorAll('[data-daily-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('Xoá dòng này? Tiền hiện có sẽ hoàn lại.')) return;
+      const id = btn.dataset.dailyDel;
+      const item = (DAILY_CACHE.items||[]).find(x=>x.id===id);
+      const res = await fetch('/api/daily-expenses?id=' + encodeURIComponent(id), { method:'DELETE' });
+      if(!res.ok){ alert('Không xoá được'); return; }
+      if(item && dailyPosted(item)) applyDailyCash(item, -1);
+      loadDaily();
+    });
+  });
+  return '';
+}
+function renderChiPanel(){
+  const items = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense');
+  if($('jt-n-chi')) $('jt-n-chi').textContent = items.length;
+  const empty = renderDailyRows($('job-chi-list'), items, 'Chưa có khoản đã chi — upload ảnh chuyển khoản.');
+  if($('job-chi-status')){
+    $('job-chi-status').hidden = !empty;
+    if(empty) $('job-chi-status').textContent = empty;
+  }
+}
 async function loadDaily(){
   const status = $('daily-status'), list = $('daily-list');
-  if(!status || !list) return;
   try{
     const res = await fetch('/api/daily-expenses?t=' + Date.now(), { cache:'no-store' });
     const json = await res.json();
-    const items = json.items || [];
-    const totals = json.totals || { income:0, expense:0, job:0 };
+    DAILY_CACHE = { items: json.items || [], totals: json.totals || { income:0, expense:0, job:0 } };
+    const totals = DAILY_CACHE.totals;
     if($('daily-tot-job')) $('daily-tot-job').textContent = fmt(totals.job||0);
     if($('daily-tot-in')) $('daily-tot-in').textContent = fmt(totals.income||0);
     if($('daily-tot-out')) $('daily-tot-out').textContent = fmt(totals.expense||0);
-    if(!items.length){
-      status.hidden = false; status.textContent = 'Chưa có ghi chép — thêm dòng hoặc upload bill.';
-      list.hidden = true; list.innerHTML = '';
-      return;
+    if($('jt-n-chi')) $('jt-n-chi').textContent = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense').length;
+    if(status && list){
+      if(!DAILY_CACHE.items.length){
+        status.hidden = false; status.textContent = 'Chưa có ghi chép — thêm dòng hoặc upload bill.';
+        list.hidden = true; list.innerHTML = '';
+      }else{
+        status.hidden = true;
+        renderDailyRows(list, DAILY_CACHE.items, '');
+      }
     }
-    status.hidden = true; list.hidden = false;
-    const groups = new Map();
-    items.forEach(it=>{
-      const day = String(it.occurredAt||'').slice(0,10);
-      if(!groups.has(day)) groups.set(day, []);
-      groups.get(day).push(it);
-    });
-    list.innerHTML = [...groups.entries()].map(([day, rows])=>{
-      const label = day ? new Date(day+'T00:00:00').toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'}) : '—';
-      return `<div class="daily-day">${esc(label)}</div>` + rows.map(it=>{
-        const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
-        const sign = it.kind==='expense' ? '−' : '+';
-        const meta = [it.bank, it.bankRef ? '#'+it.bankRef : '', it.source==='ocr'?'OCR':'Nhập tay'].filter(Boolean).join(' · ');
-        return `<div class="daily-row">
-          <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
-          <div class="desc"><b>${esc(it.description||'—')}</b><i>${esc(meta)}</i></div>
-          <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
-          <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
-        </div>`;
-      }).join('');
-    }).join('');
-    list.querySelectorAll('[data-daily-del]').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        if(!confirm('Xoá dòng này?')) return;
-        await fetch('/api/daily-expenses?id=' + encodeURIComponent(btn.dataset.dailyDel), { method:'DELETE' });
-        loadDaily();
-      });
-    });
+    if(JVIEW === 'chi') renderChiPanel();
   }catch(e){
-    status.hidden = false; status.textContent = 'Không tải được hằng ngày (API).';
+    if(status){ status.hidden = false; status.textContent = 'Không tải được hằng ngày (API).'; }
   }
 }
 async function addDaily(payload){
+  const note = [payload.note, '__cash:1'].filter(Boolean).join(' ');
   const res = await fetch('/api/daily-expenses', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ ...payload, note })
   });
   if(!res.ok) throw new Error('save failed');
+  const saved = await res.json();
+  applyDailyCash(saved, 1);
   await loadDaily();
+  return saved;
+}
+async function ocrBankImages(files, statusEl, btn){
+  const list = [...files].filter(f=>String(f.type||'').startsWith('image/'));
+  if(!list.length){ alert('Chỉ upload ảnh chuyển khoản.'); return; }
+  const label = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc bill…'; }
+  const done = [];
+  try{
+    for(const f of list){
+      if(statusEl) statusEl.textContent = 'Gemini đang đọc ' + f.name + '…';
+      const imageBase64 = await fileToBase64(f);
+      const ocrRes = await fetch('/api/daily-expenses/ocr', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ imageBase64, mimeType: f.type || 'image/jpeg' })
+      });
+      const ocr = await ocrRes.json();
+      if(!ocrRes.ok) throw new Error(ocr.error || ocr.detail || 'OCR thất bại');
+      if(!ocr.kind) ocr.kind = 'expense';
+      const saved = await addDaily({ ...ocr, source:'ocr' });
+      done.push(saved);
+    }
+    const last = done[done.length-1];
+    const msg = last
+      ? `Đã ghi ${fmt(last.amount||0)} · ${last.description||'chuyển khoản'} — trừ Tiền hiện có`
+      : 'Xong';
+    if(statusEl){ statusEl.hidden = false; statusEl.textContent = msg; }
+  }catch(err){
+    alert(err.message || 'OCR thất bại. Cần GEMINI_API_KEY trên Vercel.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = label; }
+  }
 }
 function bindDaily(){
   const form = $('daily-form');
-  if(!form) return;
-  if($('daily-date') && !$('daily-date').value) $('daily-date').value = todayISO();
-  form.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const amount = parseNum($('daily-amount').value);
-    const description = ($('daily-desc').value||'').trim();
-    if(!amount || !description){ $('daily-desc').focus(); return; }
-    try{
-      await addDaily({
-        occurredAt: $('daily-date').value || todayISO(),
-        kind: $('daily-kind').value,
-        amount, description, source:'manual'
-      });
-      $('daily-amount').value = '';
-      $('daily-desc').value = '';
-    }catch(err){ alert('Không lưu được dòng hằng ngày.'); }
-  });
-  const file = $('daily-file'), upload = $('daily-upload');
-  if(upload && file){
-    upload.addEventListener('click', ()=> file.click());
-    file.addEventListener('change', async ()=>{
-      const f = file.files && file.files[0];
-      file.value = '';
-      if(!f) return;
-      if(!String(f.type||'').startsWith('image/')){ alert('Chỉ upload ảnh bill.'); return; }
-      upload.disabled = true; upload.textContent = 'Đang OCR…';
+  if(form){
+    if($('daily-date') && !$('daily-date').value) $('daily-date').value = todayISO();
+    form.addEventListener('submit', async e=>{
+      e.preventDefault();
+      const amount = parseNum($('daily-amount').value);
+      const description = ($('daily-desc').value||'').trim();
+      if(!amount || !description){ $('daily-desc').focus(); return; }
       try{
-        const imageBase64 = await fileToBase64(f);
-        const ocrRes = await fetch('/api/daily-expenses/ocr', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ imageBase64, mimeType: f.type })
+        await addDaily({
+          occurredAt: $('daily-date').value || todayISO(),
+          kind: $('daily-kind').value,
+          amount, description, source:'manual'
         });
-        const ocr = await ocrRes.json();
-        if(!ocrRes.ok) throw new Error(ocr.error || 'OCR thất bại');
-        await addDaily({ ...ocr, source:'ocr' });
-        if($('daily-status')) $('daily-status').textContent = 'Đã trích xuất: ' + fmt(ocr.amount||0) + ' · ' + (ocr.description||'');
-      }catch(err){
-        alert(err.message || 'OCR thất bại. Kiểm tra GEMINI_API_KEY trên Vercel.');
-      }finally{
-        upload.disabled = false; upload.textContent = '⬆ Upload bill (Gemini)';
-      }
+        $('daily-amount').value = '';
+        $('daily-desc').value = '';
+      }catch(err){ alert('Không lưu được dòng hằng ngày.'); }
     });
   }
+  const bindPicker = (fileId, btnId, statusId)=>{
+    const file = $(fileId), upload = $(btnId);
+    if(!upload || !file) return;
+    upload.addEventListener('click', ()=> file.click());
+    file.addEventListener('change', async ()=>{
+      const files = [...(file.files||[])];
+      file.value = '';
+      await ocrBankImages(files, $(statusId), upload);
+    });
+  };
+  bindPicker('daily-file', 'daily-upload', 'daily-status');
+  bindPicker('job-chi-file', 'job-chi-upload', 'job-chi-status');
   loadDaily();
 }
 

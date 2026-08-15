@@ -11,21 +11,30 @@ import { NextRequest, NextResponse } from "next/server";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-const PROMPT = `Bạn là trợ lý trích xuất thông tin giao dịch từ ảnh chụp bill/biên lai/screenshot chuyển khoản ngân hàng Việt Nam.
+const PROMPT = `Bạn đọc screenshot chuyển khoản / biên lai app ngân hàng Việt Nam (Techcombank, Vietcombank, MB, TPBank, OCB, SCB, BIDV, ACB, MoMo, ZaloPay…).
 
-Trả về DUY NHẤT một JSON object hợp lệ (không markdown, không text thừa) với các field:
+Quy tắc:
+- "Chuyển thành công / Đã chuyển / Chuyển tiền / Tới [tên]" = expense (tiền ra).
+- "Nhận tiền / Tiền vào / Từ [tên] chuyển đến" = income (tiền vào).
+- amount là số VND nguyên, bỏ dấu chấm/phẩy (VND 250,000 → 250000).
+- description = tiêu đề ngắn: tên người nhận/gửi + lời nhắn nếu có. VD: "TRAN THI KHUONG · Nhat Thanh chuyen khoan nhanh qua Zalo".
+- occurredAt = ngày giao dịch YYYY-MM-DD (13 thg 8, 2026 → 2026-08-13).
+- bankRef = mã giao dịch (FT…, Trace, Ref).
+- bank = ngân hàng nguồn nếu thấy (TECHCOMBANK → TCB, Vietcombank → VCB).
+
+Trả DUY NHẤT JSON:
 {
-  "amount": number,          // số tiền VND, chỉ số (VD: 150000)
-  "description": string,     // mô tả ngắn: nội dung chuyển khoản, tên người/nơi
-  "occurredAt": string,      // ISO 8601 date "YYYY-MM-DD" nếu có, ngược lại today
-  "bankRef": string | null,  // mã tham chiếu / mã giao dịch nếu có
-  "bank": string | null,     // TCB | TPB | OCB | SCB | MB | VCB | BIDV | ACB | null
-  "kind": "income" | "expense", // "income" nếu nhận tiền vào, "expense" nếu chuyển tiền ra
-  "category": string,        // "an-uong" | "di-lai" | "mua-sam" | "luong" | "thu-nhap" | "khac"
-  "confidence": number       // 0..1 độ tin cậy
+  "amount": number,
+  "description": string,
+  "occurredAt": "YYYY-MM-DD",
+  "bankRef": string | null,
+  "bank": "TCB" | "TPB" | "OCB" | "SCB" | "MB" | "VCB" | "BIDV" | "ACB" | "MOMO" | null,
+  "kind": "income" | "expense",
+  "category": "an-uong" | "di-lai" | "mua-sam" | "luong" | "thu-nhap" | "khac",
+  "confidence": number
 }
 
-Nếu ảnh không phải bill/giao dịch, trả về {"error": "not_a_receipt"}.`;
+Ảnh không phải giao dịch: {"error":"not_a_receipt"}.`;
 
 type OcrResult = {
   amount: number;
@@ -116,10 +125,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
 
-    // Chuẩn hoá ngày
+    // Chuẩn hoá ngày + ngân hàng
     if (!parsed.occurredAt || !/^\d{4}-\d{2}-\d{2}/.test(parsed.occurredAt)) {
       parsed.occurredAt = new Date().toISOString().slice(0, 10);
+    } else {
+      parsed.occurredAt = parsed.occurredAt.slice(0, 10);
     }
+    parsed.amount = Math.round(Number(parsed.amount) || 0);
+    const bankMap: Record<string, string> = {
+      techcombank: "TCB",
+      tcb: "TCB",
+      vietcombank: "VCB",
+      vcb: "VCB",
+      tpbank: "TPB",
+      tpb: "TPB",
+      mbbank: "MB",
+      mb: "MB",
+    };
+    if (parsed.bank) {
+      parsed.bank = bankMap[String(parsed.bank).toLowerCase().replace(/\s+/g, "")] || parsed.bank;
+    }
+    if (parsed.kind !== "income" && parsed.kind !== "expense") parsed.kind = "expense";
 
     return NextResponse.json(parsed);
   } catch (e) {
