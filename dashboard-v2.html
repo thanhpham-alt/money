@@ -4163,7 +4163,7 @@ function normalizeProd(p){
 S.pros.forEach(normalizeProd);
 
 /* Thanh toán giờ CHỈ có 2 trạng thái: chưa trả ↔ đã trả (dấu tick).
-   Nguồn tiền (tự ứng / cty) do "Công ty đã ứng" quyết định chung, không gắn từng dòng. */
+   Bỏ "Công ty đã ứng": mọi khoản đã thanh toán được tính là tiền đã ứng/tự ứng. */
 const rowTong    = r => (+r.cp||0) + (+r.otTien||0);
 const rowPaid    = r => !!r.nguon && r.nguon !== 'chua_tra';   /* đã thanh toán */
 const rowConTra  = r => rowPaid(r) ? 0 : rowTong(r);
@@ -4199,15 +4199,11 @@ function proCalc(p){
   const atanOtSum = p.prod.reduce((s,r)=>s+(isAtanPerson(r) ? (+r.otTien||0) : 0),0);
   const ungSum  = 0;   /* mục "Ứng" đã bỏ khỏi Production */
   const thucChi = prodSum + otSum;                  /* CP sản xuất phát sinh, kể cả chưa trả */
-  /* QUY TẮC NGUỒN TIỀN (theo Thanh):
-     - Công ty đã ứng > 0  → mọi khoản đã thanh toán tính là TIỀN CÔNG TY (tiền job)
-     - Công ty đã ứng = 0  → mọi khoản đã thanh toán tính là TIỀN MÌNH tự bỏ ra
-     Không còn gắn nguồn theo từng dòng — chỉ cần tick "đã thanh toán". */
+  /* Bỏ "Công ty đã ứng": chỉ cần tick "đã thanh toán" là tính vào tiền đã ứng/tự ứng. */
   const paidSum  = p.prod.reduce((s,r)=> s + (rowPaid(r) ? rowTong(r) : 0), 0);
   const nPaid    = p.prod.filter(rowPaid).length;
-  const advNow   = (+p.advance||0);
-  const daTraTuUng  = advNow > 0 ? 0 : paidSum;
-  const daTraCtyUng = advNow > 0 ? paidSum : 0;
+  const daTraTuUng  = paidSum;
+  const daTraCtyUng = 0;
   const conTra  = thucChi - paidSum;   /* = "Còn phải trả CTV" (các dòng chưa thanh toán) */
   /* tách theo loại (dùng cho dải Producer) */
   const prodcSum = p.prod.reduce((s,r)=> s + (isProducer(r) ? rowTong(r) : 0), 0);
@@ -4231,14 +4227,11 @@ function proCalc(p){
   /* LN ròng: OT đã nằm trong thucChi, không lấy atanThuc vì atanThuc cũng hiển thị OT. */
   const net   = p.contract - otherCost - thucChi;
 
-  /* CÔNG TY ỨNG: luôn là số NHẬP TAY (brief mục 5) — bỏ chế độ tự tính theo %.
-     advRate chỉ còn để hiện gợi ý. */
-  const advRate = p.advRate == null ? 50 : +p.advRate;
-  const advance = (+p.advance||0);                 /* = Cty_da_ung */
-  const advGoiY = p.contract * advRate/100;        /* gợi ý theo % HĐ (không ghi đè) */
-  const ctyConLai = advance - daTraCtyUng;         /* tiền cty đưa còn chưa xài · âm = cảnh báo */
-  /* Công ty còn phải chuyển = giá trị hợp đồng trừ phần đã ứng (chưa trừ chi phí — chi phí trừ ở LN) */
-  const ctyConNo  = p.contract - advance;
+  const advRate = 0;
+  const advance = 0;
+  const advGoiY = 0;
+  const ctyConLai = 0;
+  const ctyConNo  = p.contract;
   /* Dự toán tiền thu về = tiền LN + tiền đã ứng - tiền thu đã xác nhận. */
   const duToanThuVe = daTraTuUng + net;
   const loiRongThuVe = duToanThuVe; /* alias cũ để phần code khác không vỡ */
@@ -5231,11 +5224,6 @@ function renderProDetail(){
               <button class="atan-lock pro-received-toggle ${p.receivedDone?'on':''}" id="pro-received-toggle"
                       title="${p.receivedDone?'Đã thu đủ — bấm để bỏ tick':'Tick đã thu đủ'}">${p.receivedDone?'Đã thu':'Thu'}</button>
             </div></label>
-          <label class="pro-budget-field"><span>Công ty đã ứng</span>
-            <div class="atan-cell">
-              <input type="text" class="money" id="pro-adv" value="${nf.format(+p.advance||0)}" placeholder="0">
-              <button class="atan-lock" id="adv-toggle" title="Điền số gợi ý theo % hợp đồng">↧</button>
-            </div><small id="adv-hint" hidden></small></label>
           <label class="pro-budget-field"><span>A Tân</span>
             <div class="atan-cell">
               <input type="text" class="money${p.atanAuto === false ? '' : ' locked'}" id="pro-atan-budget"
@@ -5348,7 +5336,6 @@ function renderProDetail(){
             <div class="modal-head"><div class="badge">⚙</div><h2>Cài đặt tỷ lệ ngân sách</h2>
               <button class="rowbtn" id="budget-rates-close">✕</button></div>
             <div class="budget-rates-modal-body">
-              <label class="budget-rate-field"><span>Công ty ứng</span><input type="number" id="pro-advrate" min="0" step="0.1" value="${p.advRate == null ? 50 : p.advRate}"><i>%</i></label>
               <label class="budget-rate-field"><span>A Tân</span><input type="number" id="pro-atanrate" min="0" step="0.1" value="${p.atanRate == null ? 22 : p.atanRate}"><i>%</i></label>
               <label class="budget-rate-field"><span>Phí xuất hoá đơn</span><input type="number" id="pro-feerate" min="0" step="0.1" value="${p.feeRate}"><i>%</i></label>
               <label class="budget-rate-field"><span>VAT</span><input type="number" id="pro-vatrate" min="0" step="0.1" value="${p.vatRate}"><i>%</i></label>
@@ -5457,16 +5444,6 @@ function renderProDetail(){
     e.target.value = nf.format(p.atan);
   });
   $('pro-atanrate').addEventListener('input', e=>{ p.atanRate = parseFloat(e.target.value)||0; calc(); });
-  $('pro-advrate').addEventListener('input', e=>{ p.advRate = parseFloat(e.target.value)||0; calc(); });
-  $('pro-adv').addEventListener('input', e=>{ liveFormatMoney(e.target); p.advance = parseNum(e.target.value); calc(); });
-  $('pro-adv').addEventListener('blur', e=>{ e.target.value = nf.format(+p.advance||0); });
-  /* nút ↧ chỉ ĐIỀN GỢI Ý theo %, không tự ghi đè khi gõ tay (brief mục 5) */
-  $('adv-toggle').addEventListener('click', ()=>{
-    const goiY = Math.round(proCalc(p).advGoiY);
-    if(!confirm('Điền ' + fmt(goiY) + ' (' + (p.advRate == null ? 50 : p.advRate) + '% hợp đồng) vào ô Công ty đã ứng?')) return;
-    p.advAuto = false; p.advance = goiY;
-    $('pro-adv').value = nf.format(goiY); calc();
-  });
   /* ⓘ breakdown của "Dự toán tiền thu về" */
   $('thuve-info').addEventListener('click', ()=>{
     const c = proCalc(p);
@@ -5736,7 +5713,7 @@ function calc(){
     $('pro-atan-actual-ot-note').textContent = c.atanOtSum > 0 ? ' + OT A Tân' : '';
     if(ap.atanAuto !== false && document.activeElement !== $('pro-atan-budget'))
       $('pro-atan-budget').value = nf.format(Math.round(c.atan));
-    /* công ty ứng — cập nhật realtime */
+    /* Các số ẩn giữ alias cũ để không vỡ phần dashboard khác. */
     set('pro-adv-l', c.advance); set('pro-spent', c.spentReal);
     set('pro-paid-out', c.daChiRa);
     const pk = $('pro-pocket');
@@ -5749,8 +5726,7 @@ function calc(){
     const advLeftEl = $('pro-adv-left');
     advLeftEl.textContent = fmt(c.netAfterAdv);
     advLeftEl.className = c.netAfterAdv >= 0 ? 'c-green' : 'c-red';
-    $('adv-rate-l').textContent = ap.advAuto === false ? 'điền tay' : c.advRate + '% × hợp đồng';
-    $('adv-hint').textContent = 'tiền thật đã chuyển · gợi ý ' + fmtShort(c.advGoiY) + ' ₫ (' + c.advRate + '% HĐ)';
+    $('adv-rate-l').textContent = 'đã bỏ';
     set('pro-other-l', c.otherCost); set('pro-total-l', c.totalCost);
     $('pro-total-note').textContent = 'gồm ' + fmtShort(c.otherCost) + ' ₫ hoá đơn & A Tân';
     set('pro-gross-l', c.gross, true); set('pro-net-l', c.net, true);
@@ -5766,18 +5742,14 @@ function calc(){
     tv.className = 'sh-val ' + (c.tienThuVe >= 0 ? 'pos' : 'neg');
     $('thuve-break').textContent =
       'LN ' + fmtShort(c.net) + ' ₫ + đã ứng ' + fmtShort(c.daTraTuUng) + ' ₫ − thu ' + fmtShort(c.daThuVe) + ' ₫';
-    /* công ty còn nợ + 2 cảnh báo (brief mục 5) */
+    /* Cảnh báo công ty ứng đã bỏ khỏi UI. */
     const ctyNoEl = $('pro-ctyno-l');
     ctyNoEl.textContent = fmt(c.ctyConNo);
     ctyNoEl.className = c.ctyConNo >= 0 ? 'c-green' : 'c-red';
     const w1 = $('warn-conlai');
-    w1.hidden = !(c.ctyConLai < 0);
-    if(!w1.hidden) w1.textContent =
-      '⚠ Đã thanh toán ' + fmt(c.daTraCtyUng) + ' vượt tiền công ty ứng ' + fmt(c.advance)
-      + ' — phần vượt ' + fmt(-c.ctyConLai) + ' bạn đang tự bỏ ra';
+    w1.hidden = true;
     const w2 = $('warn-conno');
-    w2.hidden = !(c.ctyConNo < 0);
-    if(!w2.hidden) w2.textContent = '⚠ Công ty đã ứng/trừ vượt giá trị hợp đồng — kiểm tra lại số liệu';
+    w2.hidden = true;
     /* Giữ cách đếm tổng cũ: gồm cả CTV và Producer (Producer hiển thị ở dải riêng). */
     const countRows = ap.prod;
     const countPaid = countRows.filter(rowPaid).length;
@@ -5790,7 +5762,7 @@ function calc(){
       tv2.textContent = fmt(c.tienThuVe);
       $('pk-thuve').classList.toggle('neg', c.tienThuVe < 0);
       if($('pct-sum')) $('pct-sum').textContent =
-        'A Tân ' + c.atanRate + '% · xuất HĐ ' + ap.feeRate + '% · VAT ' + ap.vatRate + '% · cty ứng ' + c.advRate + '%';
+        'A Tân ' + c.atanRate + '% · xuất HĐ ' + ap.feeRate + '% · VAT ' + ap.vatRate + '%';
       set('pk-hopdong', ap.contract);
       $('pk-hopdong-note').textContent = 'phí xuất ' + fmtShort(c.fee) + ' · VAT ' + fmtShort(c.vat);
       const lnEl = $('pk-lnrong');
@@ -5800,10 +5772,8 @@ function calc(){
       set('pk-thuchi', c.thucChi);
       $('pk-thuchi-note').textContent = 'CP gốc ' + fmtShort(c.prodSum) + ' + OT ' + fmtShort(c.otSum);
       set('pk-tuung', c.daTraTuUng);
-      set('pk-ctyung', c.advance);
-      $('pk-ctyung-note').textContent = c.advance
-        ? 'đã dùng ' + fmtShort(c.daTraCtyUng) + ' · còn ' + fmtShort(c.ctyConLai)
-        : 'chưa ứng đồng nào';
+      set('pk-ctyung', 0);
+      $('pk-ctyung-note').textContent = 'đã bỏ';
       set('pk-contra', c.conTra);
       const nChua = ap.prod.filter(r => !rowPaid(r)).length;
       $('pk-contra-note').textContent = nChua + '/' + ap.prod.length + ' khoản chưa trả';
