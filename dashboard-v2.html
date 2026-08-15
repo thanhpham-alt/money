@@ -2869,7 +2869,7 @@ const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;',
    để cấp token tin cậy cho từng browser/máy bạn cấu hình. */
 const ACCESS_LOCK = {
   trustedKey: 'money2026_trusted_device_v1',
-  passHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
+  passHash: '078ff05b6f3d6ea327efe0b40559eb00f11c9b44b8b68bd3f4d18b46e00e9f71',
   grantHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
   deviceLabel: 'd0:c0:50:d9:62:2d'
 };
@@ -2881,13 +2881,19 @@ async function sha256Text(text){
 function isTrustedDevice(){
   try{
     const raw = JSON.parse(localStorage.getItem(ACCESS_LOCK.trustedKey) || 'null');
-    return !!(raw && raw.ok === true && raw.passHash === ACCESS_LOCK.passHash);
+    if(!raw || raw.ok !== true) return false;
+    const byPass = raw.passHash === ACCESS_LOCK.passHash;
+    const byGrantedMac = raw.deviceLabel === ACCESS_LOCK.deviceLabel &&
+      (raw.grantHash === ACCESS_LOCK.grantHash || raw.passHash === ACCESS_LOCK.grantHash);
+    if(byGrantedMac && !byPass) trustThisDevice();
+    return byPass || byGrantedMac;
   }catch(e){ return false; }
 }
 function trustThisDevice(){
   localStorage.setItem(ACCESS_LOCK.trustedKey, JSON.stringify({
     ok:true,
     passHash:ACCESS_LOCK.passHash,
+    grantHash:ACCESS_LOCK.grantHash,
     deviceLabel:ACCESS_LOCK.deviceLabel,
     trustedAt:new Date().toISOString()
   }));
