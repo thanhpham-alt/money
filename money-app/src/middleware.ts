@@ -25,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!.*\\..*).*)", "/favicon.ico"],
+  matcher: ["/((?!.*\\..*).*)", "/favicon.ico", "/dashboard-v2.html"],
 };

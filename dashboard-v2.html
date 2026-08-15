@@ -2859,6 +2859,9 @@ const ACCESS_LOCK = {
   grantHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
   deviceLabel: 'd0:c0:50:d9:62:2d'
 };
+function isBluescopePublicHost(){
+  return /^bluescope\./i.test(location.hostname || '');
+}
 async function sha256Text(text){
   const bytes = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest('SHA-256', bytes);
@@ -2900,6 +2903,11 @@ async function grantDeviceFromUrl(){
 async function ensureAccessUnlocked(){
   const root = document.body;
   const lock = $('auth-lock');
+  if(isBluescopePublicHost()){
+    root.classList.remove('auth-locked');
+    if(lock) lock.hidden = true;
+    return true;
+  }
   try{ await grantDeviceFromUrl(); }catch(e){}
   if(isTrustedDevice()){
     root.classList.remove('auth-locked');
@@ -6487,7 +6495,8 @@ window.openDataRescue = openDataRescue;
   /* public không nạp full seed admin; admin lần đầu nạp seed deploy */
   const slug = (location.hash || '').replace(/^#\/?/, '') || location.pathname.replace(/^\/+|\/+$/g, '');
   const params = new URLSearchParams(location.search);
-  if(params.get('public') === '1') sessionStorage.setItem('money2026_public_only', '1');
+  if(isBluescopePublicHost()) sessionStorage.setItem('money2026_public_only', '1');
+  else if(params.get('public') === '1') sessionStorage.setItem('money2026_public_only', '1');
   else if(!isPublicSlug(slug)) sessionStorage.removeItem('money2026_public_only');
 
   const publicOnly = sessionStorage.getItem('money2026_public_only') === '1';
