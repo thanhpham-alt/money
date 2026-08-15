@@ -2853,6 +2853,26 @@ const bsRow = o => {
   }
   return syncBsCostLegacy(r);
 };
+/* Phục hồi từ SQLite thật của module Bluescope (`money-app/prisma/dev.db`).
+   `discount` bù phần rate card hiện tại đang tính camera full-day 6tr, còn DB gốc shootCost là 5tr. */
+const BLUESCOPE_DB_BOOKINGS = [
+  {name:'Quay Trồng Cây', brief:'NGUYÊN', date:'2026-06-11', type:'ĐI TỈNH', time:'CẢ NGÀY',
+    photo:0, video:1, recap:1, dung:0, discount:1000000, note:''},
+  {name:'Quay Bình Dương', brief:'NGUYÊN', date:'2026-06-17', type:'ĐI TỈNH', time:'CẢ NGÀY',
+    photo:0, video:1, recap:2, dung:0, discount:1000000, note:'Đi xa + 1 nhân sự quay chụp'},
+  {name:'Sửa POSM', brief:'NGUYÊN', date:'2026-06-26', type:'BRIEF KHÁC', time:'NỬA NGÀY',
+    photo:0, video:0, recap:0, dung:3000000, discount:0, note:''},
+  {name:'FY 26', brief:'', date:'', type:'BRIEF KHÁC', time:'CẢ NGÀY',
+    photo:0, video:0, recap:0, dung:0, discount:0, note:''},
+  {name:'Recap Q3', brief:'NGUYÊN', date:'2025-06-06', type:'EDIT', time:'NỬA NGÀY',
+    photo:0, video:0, recap:1, dung:0, discount:0, note:''},
+  {name:'POSM _ 2 banner', brief:'NGUYÊN', date:'2025-07-04', type:'BRIEF KHÁC', time:'CẢ NGÀY',
+    photo:0, video:0, recap:0, dung:2000000, discount:0, note:''},
+  {name:'Recap Q3 fix 2', brief:'NGUYÊN', date:'2026-07-19', type:'HCM', time:'CẢ NGÀY',
+    photo:0, video:0, recap:0, dung:2000000, discount:0, note:''},
+  {name:'Recap FY26', brief:'', date:'', type:'EDIT', time:'',
+    photo:0, video:0, recap:0, dung:7000000, discount:0, note:''}
+];
 
 const DEFAULT = {
   theme:'light',
@@ -2867,16 +2887,7 @@ const DEFAULT = {
   },
   budget:{ ngansach:100000000, danhan:0, benTra:'', ngayTra:'', daTra:false },
   budgets:[],
-  bluescope:[
-    bsRow({name:'Quay Trồng Cây', brief:'NGUYÊN', date:'2026-06-11', type:'ĐI TỈNH', time:'CẢ NGÀY', video:1, recap:1}),
-    bsRow({name:'Quay Bình Dương', brief:'NGUYÊN', date:'2026-06-17', type:'ĐI TỈNH', time:'CẢ NGÀY', video:1, recap:2, note:'Đi xa + 1 nhân sự quay chụp'}),
-    bsRow({name:'Sửa POSM', brief:'NGUYÊN', date:'2026-06-26', type:'BRIEF KHÁC', time:'NỬA NGÀY', dung:3000000}),
-    bsRow({name:'FY 26', time:''}),
-    bsRow({name:'Recap Q3', brief:'NGUYÊN', date:'2025-06-06', type:'EDIT', time:'NỬA NGÀY', recap:1}),
-    bsRow({name:'POSM — 2 banner', brief:'NGUYÊN', date:'2025-07-04', type:'BRIEF KHÁC', time:'CẢ NGÀY', dung:2000000}),
-    bsRow({name:'Recap Q3 fix 2', brief:'NGUYÊN', date:'2026-07-19', type:'HCM', time:'CẢ NGÀY', dung:2000000}),
-    bsRow({name:'Recap FY26', time:''})
-  ],
+  bluescope: BLUESCOPE_DB_BOOKINGS.map(bsRow),
   jobs:[
     ["Cọc nhà","",19000000,0],
     ["Bizeyes — Thảo · Hiếu","Rivus",10700000,0],
@@ -3019,6 +3030,24 @@ if(!S.bsRepairV2){
   });
   S.rate.excelLegacy = false;   // luôn tính theo E4 (đúng), không theo lỗi Excel gốc
   S.bsRepairV2 = true;
+}
+if(!S.bsDatabaseRestoreV1){
+  const key = s => String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[_–—-]+/g,' ').replace(/\s+/g,' ').trim();
+  const existing = new Map((S.bluescope||[]).map(r=>[key(r.name), r]));
+  const restoredKeys = new Set(BLUESCOPE_DB_BOOKINGS.map(r=>key(r.name)));
+  const restored = BLUESCOPE_DB_BOOKINGS.map(src=>{
+    const old = existing.get(key(src.name)) || {};
+    const keepCosts = Array.isArray(old.ctvCosts) && old.ctvCosts.length ? {ctvCosts:old.ctvCosts} : {};
+    return bsRow(Object.assign({}, old, src, keepCosts));
+  });
+  const extras = (S.bluescope||[]).filter(r=>!restoredKeys.has(key(r.name)) && (
+    String(r.name||'').trim() || r.date || r.type || (+r.photo||0) || (+r.video||0) ||
+    (+r.recap||0) || (+r.dung||0) || (+r.discount||0) || bsCostFilled(r).length
+  ));
+  S.bluescope = restored.concat(extras.map(bsRow));
+  S.bsDatabaseRestoreV1 = true;
 }
 
 document.documentElement.dataset.theme = S.theme || 'light';
