@@ -2156,7 +2156,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-income-card .ov-card-icon{background:rgba(255,255,255,.16);color:#fff}.ov-income-card .ov-card-head small{color:rgba(255,255,255,.68)}
 .ov-income-card .ov-card-head h2{color:#fff}.ov-main-value{display:block;margin:2px 0 11px;font-size:28px;line-height:1;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.ov-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.ov-source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .ov-source{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 7px;border:1px solid rgba(255,255,255,.17);
   border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font:inherit;text-align:left;cursor:pointer;transition:.15s}
 .ov-source:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35)}
@@ -2372,12 +2372,13 @@ body.public-mode #panel-bs-public{display:none!important}
   <!-- Dashboard công nợ và nghĩa vụ nợ -->
   <div id="hero-cards" class="ov-dashboard" aria-label="Dashboard công nợ và các khoản nợ">
     <section class="ov-card ov-income-card">
-      <div class="ov-card-head"><span class="ov-card-icon">CN</span><div><small>Tiền thu về Production + Job/Linh tinh + Bluescope</small><h2>Công nợ</h2></div></div>
+      <div class="ov-card-head"><span class="ov-card-icon">TT</span><div><h2>Tổng tiền</h2></div></div>
       <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
       <div class="ov-source-grid">
         <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
         <button type="button" class="ov-source" data-scroll="job-body"><span>Job / Linh tinh</span><b id="ov-receivable-job">0 ₫</b></button>
         <button type="button" class="ov-source" data-goto="bluescope"><span>Bluescope</span><b id="ov-receivable-bs">0 ₫</b></button>
+        <button type="button" class="ov-source"><span>Tiền hiện còn</span><b id="ov-cash-left">0 ₫</b></button>
       </div>
     </section>
 
@@ -5731,10 +5732,13 @@ function calc(){
   /* ---- Dashboard Tổng quan V3 ----
      Production chỉ tính đúng số "Tiền thu về"; không lấy tổng hợp đồng. */
   const receivableTotal = proThuVe + jobTotal + sumBS;
+  const debtWithoutShinhan = totalDebt - loanInterest;
+  const cashLeftFromReceivables = receivableTotal - debtWithoutShinhan;
   set('ov-receivable-total', receivableTotal, true);
   set('ov-receivable-pro', proThuVe);
   set('ov-receivable-job', jobTotal);
   set('ov-receivable-bs', sumBS);
+  set('ov-cash-left', cashLeftFromReceivables, true);
   set('ov-card-debt', totalDebt);
   set('ov-bank-debt', loanOutstanding);
   set('ov-bank-principal', landLoan.principalMonthly);
