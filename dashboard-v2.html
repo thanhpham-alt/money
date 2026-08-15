@@ -39,6 +39,45 @@ body{
   font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   font-size:14px;font-weight:400;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
+body.auth-locked{overflow:hidden}
+body.auth-locked header,
+body.auth-locked .wrap{visibility:hidden;pointer-events:none}
+body.auth-locked #auth-lock{display:grid}
+.auth-lock{
+  display:none;position:fixed;inset:0;z-index:9999;place-items:center;
+  padding:24px;background:
+    radial-gradient(circle at 18% 12%, rgba(79,70,229,.18), transparent 34%),
+    radial-gradient(circle at 84% 18%, rgba(124,58,237,.18), transparent 32%),
+    var(--bg);
+}
+.auth-card{
+  width:min(440px,100%);background:var(--card);border:1px solid var(--border);
+  border-radius:24px;padding:28px;box-shadow:0 24px 80px rgba(15,23,42,.18);
+}
+.auth-logo{
+  width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--accent),#8b5cf6);
+  display:grid;place-items:center;color:#fff;font-weight:800;margin-bottom:18px;font-size:18px;
+}
+.auth-card h2{margin:0 0 8px;font-size:24px;letter-spacing:-.6px}
+.auth-card p{margin:0 0 18px;color:var(--sub);line-height:1.55}
+.auth-device{
+  display:flex;justify-content:space-between;gap:12px;align-items:center;
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:11px 13px;
+  margin-bottom:16px;color:var(--sub);font-size:12px;font-weight:700;
+}
+.auth-device code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text);font-size:12px}
+.auth-form{display:grid;grid-template-columns:1fr auto;gap:10px}
+.auth-form input{
+  border:1px solid var(--border);border-radius:14px;background:var(--input);color:var(--text);
+  padding:13px 14px;font-size:15px;outline:none;font-weight:650;
+}
+.auth-form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.auth-form button{
+  border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:800;
+  padding:0 18px;cursor:pointer;font-size:14px;
+}
+.auth-msg{min-height:20px;margin-top:12px;font-size:12px;color:var(--red);font-weight:700}
+.auth-note{margin-top:14px!important;font-size:12px!important;color:var(--faint)!important}
 /* Ép toàn bộ UI dùng Be Vietnam Pro — kể cả số tiền (tabular-nums) */
 button,input,select,textarea,table,th,td,b,i,small,span,label,a,
 .tab,.iconbtn,.pill,.pk,.kpi,.pro-pay-status,.bscost,.bs-items,
@@ -2329,7 +2368,22 @@ body.public-mode #panel-bs-public{display:none!important}
 }
 </style>
 </head>
-<body>
+<body class="auth-locked">
+
+<div class="auth-lock" id="auth-lock" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-card">
+    <div class="auth-logo">NT</div>
+    <h2 id="auth-title">Khoá MONEY 2026</h2>
+    <p>Chỉ thiết bị đã được cấp quyền mới mở được dashboard. Nhập pass một lần để cấu hình máy này.</p>
+    <div class="auth-device"><span>Thiết bị gốc</span><code>d0:c0:50:d9:62:2d</code></div>
+    <div class="auth-form">
+      <input id="auth-pass" type="password" autocomplete="current-password" placeholder="Nhập pass truy cập">
+      <button id="auth-submit" type="button">Mở khoá</button>
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+    <p class="auth-note">Lưu ý: trình duyệt không cho web đọc MAC thật, nên quyền thiết bị được lưu bằng token riêng trên máy đã mở khoá.</p>
+  </div>
+</div>
 
 <header class="admin-header">
   <div class="head-in">
@@ -2791,6 +2845,72 @@ const set = (id, v, colorize) => {
   if(colorize) el.classList.add(v>=0?'pos':'neg');
 };
 const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ================= web lock =================
+   Web thuần không đọc được MAC address thật của máy. Vì vậy pass lock dùng pass quản trị
+   để cấp token tin cậy cho từng browser/máy bạn cấu hình. */
+const ACCESS_LOCK = {
+  trustedKey: 'money2026_trusted_device_v1',
+  passHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
+  deviceLabel: 'd0:c0:50:d9:62:2d'
+};
+async function sha256Text(text){
+  const bytes = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function isTrustedDevice(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(ACCESS_LOCK.trustedKey) || 'null');
+    return !!(raw && raw.ok === true && raw.passHash === ACCESS_LOCK.passHash);
+  }catch(e){ return false; }
+}
+function trustThisDevice(){
+  localStorage.setItem(ACCESS_LOCK.trustedKey, JSON.stringify({
+    ok:true,
+    passHash:ACCESS_LOCK.passHash,
+    deviceLabel:ACCESS_LOCK.deviceLabel,
+    trustedAt:new Date().toISOString()
+  }));
+}
+async function ensureAccessUnlocked(){
+  const root = document.body;
+  const lock = $('auth-lock');
+  if(isTrustedDevice()){
+    root.classList.remove('auth-locked');
+    if(lock) lock.hidden = true;
+    return true;
+  }
+  root.classList.add('auth-locked');
+  if(lock) lock.hidden = false;
+  const input = $('auth-pass'), btn = $('auth-submit'), msg = $('auth-msg');
+  if(input) setTimeout(()=>input.focus(), 80);
+  return new Promise(resolve=>{
+    const submit = async ()=>{
+      if(!input || !btn) return;
+      btn.disabled = true;
+      if(msg) msg.textContent = '';
+      try{
+        const hash = await sha256Text(input.value.trim());
+        if(hash === ACCESS_LOCK.passHash){
+          trustThisDevice();
+          root.classList.remove('auth-locked');
+          if(lock) lock.hidden = true;
+          resolve(true);
+          return;
+        }
+        if(msg) msg.textContent = 'Sai pass. Máy này chưa được cấp quyền.';
+        input.select();
+      }catch(e){
+        if(msg) msg.textContent = 'Không thể kiểm tra pass trên trình duyệt này. Hãy mở bằng Chrome/Safari bản mới.';
+      }finally{
+        btn.disabled = false;
+      }
+    };
+    if(btn) btn.addEventListener('click', submit);
+    if(input) input.addEventListener('keydown', e=>{ if(e.key === 'Enter') submit(); });
+  });
+}
 
 /* ================= state ================= */
 const LS_KEY = 'money2026_v2';
@@ -6098,6 +6218,8 @@ window.forceReloadSeed = ()=>{
 /* Khởi động: ?public=1 (từ bluescope-public.html) = khóa chỉ-xem.
    Admin mở #/public/bluescope không có ?public=1 → xem trước, vẫn về admin được. */
 (async ()=>{
+  if(!await ensureAccessUnlocked()) return;
+
   /* public không nạp full seed admin; admin lần đầu nạp seed deploy */
   const slug = (location.hash || '').replace(/^#\/?/, '');
   const params = new URLSearchParams(location.search);
