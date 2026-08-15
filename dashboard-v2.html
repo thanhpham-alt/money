@@ -3949,6 +3949,13 @@ const prodHasEntry = r => !!(
   String(r.note||'').trim() || r.qr || rowPaid(r)
 );
 const togglePaid = r => { r.nguon = rowPaid(r) ? 'chua_tra' : 'da_tra'; delete r.paid; };
+const prodPersonName = r => {
+  const c = r.crewId && S.crew.find(x=>x.id===r.crewId);
+  return c ? c.ten : (r.flText||'');
+};
+const normProdPerson = s => String(s||'').toLowerCase().normalize('NFC')
+  .replace(/\s+/g,' ').trim();
+const isAtanPerson = r => ['a tân','a tan'].includes(normProdPerson(prodPersonName(r)));
 /* nút tick thanh toán dùng chung cho bảng chính / popup Producer / dòng nhập nhanh */
 const tickHTML = (paid, attr) => `<button class="tickbtn${paid?' on':''}" ${attr}
   title="${paid?'Đã thanh toán — bấm để bỏ':'Đánh dấu đã thanh toán'}">${paid?'✓':''}</button>`;
@@ -3956,6 +3963,7 @@ const tickHTML = (paid, attr) => `<button class="tickbtn${paid?' on':''}" ${attr
 function proCalc(p){
   const prodSum = p.prod.reduce((s,r)=>s+(+r.cp||0),0);
   const otSum   = p.prod.reduce((s,r)=>s+(+r.otTien ||0),0);
+  const atanOtSum = p.prod.reduce((s,r)=>s+(isAtanPerson(r) ? (+r.otTien||0) : 0),0);
   const ungSum  = 0;   /* mục "Ứng" đã bỏ khỏi Production */
   const thucChi = prodSum + otSum;                  /* CP sản xuất phát sinh, kể cả chưa trả */
   /* QUY TẮC NGUỒN TIỀN (theo Thanh):
@@ -3977,10 +3985,10 @@ function proCalc(p){
   const atanRate = p.atanRate == null ? 22 : +p.atanRate;
   const atanAuto = (p.contract - prodSum - otSum - fee) * atanRate/100;
   const atan     = p.atanAuto === false ? (+p.atan||0) : atanAuto;
-  /* Popup A Tân liên kết OT để thấy đủ khoản A Tân đang gánh.
-     OT vẫn thuộc thucChi bên dưới, nên không cộng lại vào otherCost/net để tránh tính trùng. */
-  const atanTong = vat + fee + atan + otSum; /* tổng hiển thị = VAT + phí xuất + A Tân + OT */
-  const atanThuc = fee + atan + otSum;       /* thực tế hiển thị, không gồm VAT */
+  /* Popup chỉ liên kết OT của đúng freelancer A Tân; OT người khác không được cộng vào đây.
+     Khoản này vẫn thuộc thucChi bên dưới, nên không cộng lại vào otherCost/net để tránh tính trùng. */
+  const atanTong = vat + fee + atan + atanOtSum;
+  const atanThuc = fee + atan + atanOtSum;
   /* CP khác = phí xuất + A Tân (KHÔNG gồm VAT — giữ đúng số đã verify khớp Excel).
      Brief mục 5 liệt kê VAT trong Chi_phi_khac nhưng còn để ngỏ ở câu hỏi #3 → giữ bản Excel. */
   const otherCost = fee + atan;
@@ -4007,7 +4015,7 @@ function proCalc(p){
   const netAfterAdv = ctyConLai;
   const daChiRa = daTraTuUng + daTraCtyUng;
   const tuiMinh = daTraTuUng;
-  return {prodSum, otSum, ungSum, thucChi, conTra, prodcSum, ctvSum, paidSum, nPaid,
+  return {prodSum, otSum, atanOtSum, ungSum, thucChi, conTra, prodcSum, ctvSum, paidSum, nPaid,
           daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe,
           daChiRa, tuiMinh,
           fee, vat, atan, atanRate, atanTong, atanThuc,
@@ -5070,8 +5078,8 @@ function renderProDetail(){
                     <small>Phần A Tân được tính / nhập</small>
                   </div>
                   <div class="atan-flow-card af-ot" id="pro-atan-ot-card" hidden>
-                    <div class="af-top"><span class="af-label">OT liên kết</span><b id="pro-atan-ot"></b></div>
-                    <small>Tự lấy từ bảng chi phí sản xuất</small>
+                    <div class="af-top"><span class="af-label">OT của A Tân</span><b id="pro-atan-ot"></b></div>
+                    <small>Chỉ lấy dòng Freelancer A Tân</small>
                   </div>
                 </div>
                 <div class="atan-flow-card af-actual">
@@ -5444,10 +5452,10 @@ function calc(){
       : '';
     set('pro-fee-l', c.fee); set('pro-vat-l', c.vat); set('pro-atan-l', c.atan);
     set('pro-atan-tong', c.atanTong); set('pro-atan-thuc', c.atanThuc);
-    set('pro-atan-ot', c.otSum);
-    $('pro-atan-ot-card').hidden = c.otSum <= 0;
-    $('pro-atan-total-ot-note').textContent = c.otSum > 0 ? ' + OT' : '';
-    $('pro-atan-actual-ot-note').textContent = c.otSum > 0 ? ' + OT' : '';
+    set('pro-atan-ot', c.atanOtSum);
+    $('pro-atan-ot-card').hidden = c.atanOtSum <= 0;
+    $('pro-atan-total-ot-note').textContent = c.atanOtSum > 0 ? ' + OT A Tân' : '';
+    $('pro-atan-actual-ot-note').textContent = c.atanOtSum > 0 ? ' + OT A Tân' : '';
     if(ap.atanAuto !== false && document.activeElement !== $('pro-atan-budget'))
       $('pro-atan-budget').value = nf.format(Math.round(c.atan));
     /* công ty ứng — cập nhật realtime */
