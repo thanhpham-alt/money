@@ -3078,9 +3078,99 @@ const DEFAULT = {
   inputs:{}
 };
 
+const LS_BACKUP_KEY = LS_KEY + '_backup_latest';
+const LS_BACKUP_PREFIX = LS_KEY + '_backup_';
+function parseStateJSON(raw){
+  try{ return raw ? JSON.parse(raw) : null; }catch(e){ return null; }
+}
+function stateScore(st){
+  if(!st || typeof st !== 'object') return 0;
+  let score = 0;
+  if(Array.isArray(st.pros)){
+    score += st.pros.length * 20;
+    st.pros.forEach(p=>{
+      if(String(p.name||'').trim()) score += 2;
+      if(+p.contract) score += 4;
+      if(+p.receivedAmount || p.receivedDone) score += 8;
+      if(Array.isArray(p.prod)) p.prod.forEach(r=>{
+        if(Array.isArray(r)){
+          if(String(r[0]||'').trim()) score += 1;
+          if(String(r[1]||'').trim()) score += 1;
+          if(+r[2] || +r[3]) score += 3;
+          if(r[4] || r[5]) score += 3;
+          if(r[6]) score += 2;
+        }else if(r && typeof r === 'object'){
+          if(String(r.ten||r.name||'').trim()) score += 1;
+          if(String(r.hangmuc||r.item||'').trim()) score += 1;
+          if(+r.cp || +r.cost || +r.ot) score += 3;
+          if(r.paid || r.paidDate) score += 3;
+          if(r.qr) score += 2;
+        }
+      });
+    });
+  }
+  if(Array.isArray(st.jobs)) score += st.jobs.filter(r=>String(r?.[0]||'').trim() || +r?.[2] || +r?.[4]).length * 5;
+  if(Array.isArray(st.bluescope)) score += st.bluescope.filter(r=>String(r?.name||'').trim() || +r?.dung || +r?.photo || +r?.video || +r?.recap).length * 5;
+  if(Array.isArray(st.crew)) score += st.crew.length * 4;
+  if(st.inputs && typeof st.inputs === 'object') score += Object.values(st.inputs).filter(v=>String(v||'').trim()).length;
+  return score + Math.min(Number(st._revision || 0) / 1000000000000, 999);
+}
+function collectStoredStates(){
+  const list = [];
+  const add = (key)=>{
+    const raw = localStorage.getItem(key);
+    const data = parseStateJSON(raw);
+    if(data) list.push({key, raw, data, revision:Number(data._revision||0), score:stateScore(data)});
+  };
+  try{
+    add(LS_KEY); add(LS_BACKUP_KEY); add(LS_KEY + '_before_seed'); add(LS_KEY + '_before_force_seed');
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith(LS_BACKUP_PREFIX) && k !== LS_BACKUP_KEY) add(k);
+    }
+  }catch(e){}
+  return list;
+}
+function bestStoredState(){
+  const states = collectStoredStates();
+  if(!states.length) return {data:null, raw:null, key:LS_KEY};
+  const current = states.find(x=>x.key === LS_KEY) || {score:0, revision:0};
+  const best = states.slice().sort((a,b)=>
+    (b.revision - a.revision) || (b.score - a.score) || (b.raw.length - a.raw.length)
+  )[0];
+  if(best && best.key !== LS_KEY && (best.revision > current.revision || best.score > current.score + 12)){
+    try{ localStorage.setItem(LS_KEY, best.raw); }catch(e){}
+    console.warn('Money 2026: tự phục hồi dữ liệu từ backup', best.key);
+    return best;
+  }
+  return states.find(x=>x.key === LS_KEY) || best;
+}
+function backupStoredState(reason='autosave'){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const data = parseStateJSON(raw);
+    if(!data || stateScore(data) <= 0) return;
+    localStorage.setItem(LS_BACKUP_KEY, raw);
+    const stamp = new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
+    const key = LS_BACKUP_PREFIX + stamp + '_' + reason;
+    if(!localStorage.getItem(key)) localStorage.setItem(key, raw);
+    const keys = [];
+    for(let i=0;i<localStorage.length;i++){
+      const k = localStorage.key(i);
+      if(k && k.startsWith(LS_BACKUP_PREFIX) && k !== LS_BACKUP_KEY) keys.push(k);
+    }
+    keys.sort().slice(0, Math.max(0, keys.length - 10)).forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+}
+function hasUserStoredData(st){
+  if(!st || typeof st !== 'object') return false;
+  return Number(st._revision || 0) > 0 || stateScore(st) > stateScore(DEFAULT) + 12;
+}
+
 let S, INITIAL_LOCAL_STATE = null;
 try{
-  INITIAL_LOCAL_STATE = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+  INITIAL_LOCAL_STATE = bestStoredState().data;
   S = Object.assign({}, DEFAULT, INITIAL_LOCAL_STATE || {});
 }
 catch(e){ S = JSON.parse(JSON.stringify(DEFAULT)); }
@@ -3228,12 +3318,15 @@ function save(){
     }
     return false;
   }
+  backupStoredState('before_save');
   S.inputs = {};
   document.querySelectorAll('input[id]').forEach(i=>{ S.inputs[i.id] = i.value; });
   S.theme = document.documentElement.dataset.theme;
   STATE_REVISION = Math.max(Date.now(), STATE_REVISION + 1);
   S._revision = STATE_REVISION;
-  localStorage.setItem(LS_KEY, JSON.stringify(S));
+  const nextRaw = JSON.stringify(S);
+  localStorage.setItem(LS_KEY, nextRaw);
+  localStorage.setItem(LS_BACKUP_KEY, nextRaw);
   return true;
 }
 
@@ -6197,7 +6290,8 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
 async function ensureDeploySeed(){
   const force = new URLSearchParams(location.search).get('seed') === 'force';
   let local = null;
-  try { local = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ local = null; }
+  try { local = bestStoredState().data; } catch(e){ local = null; }
+  if(!force && hasUserStoredData(local)) return false;
   if(!force && HAD_LOCAL_STATE_ON_BOOT) return false;
   if(!force && sessionStorage.getItem('money2026_seed_tried') === '1') return false;
   sessionStorage.setItem('money2026_seed_tried', '1');
@@ -6213,8 +6307,8 @@ async function ensureDeploySeed(){
   }
   if(!data || typeof data !== 'object') return false;
 
-  if(force && local){
-    try{ localStorage.setItem(LS_KEY + '_before_force_seed', JSON.stringify(local)); }catch(e){}
+  if(local){
+    try{ localStorage.setItem(LS_KEY + (force ? '_before_force_seed' : '_before_seed'), JSON.stringify(local)); }catch(e){}
   }
 
   localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
