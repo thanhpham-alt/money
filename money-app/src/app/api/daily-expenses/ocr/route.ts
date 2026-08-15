@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
  */
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 const PROMPT = `Bạn là trợ lý trích xuất thông tin giao dịch từ ảnh chụp bill/biên lai/screenshot chuyển khoản ngân hàng Việt Nam.
 
