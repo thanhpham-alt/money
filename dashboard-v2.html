@@ -921,14 +921,14 @@ tr:hover .rowdel{opacity:1;pointer-events:auto}
 .pro-table-controls .pro-project-delete{height:29px;box-sizing:border-box;
   border-radius:7px;padding:0 8px;font-size:10px;align-items:center}
 .pro-table-controls .pro-count b{font-size:11px}
-.pro-cost-stats{display:flex;align-items:center;gap:4px}
-.pro-cost-stat{display:flex;gap:5px;border:1px solid var(--border);background:var(--bg2);color:var(--sub);white-space:nowrap}
+.pro-cost-stats{display:grid;grid-template-columns:150px 130px 150px;align-items:center;gap:4px}
+.pro-cost-stat{display:flex;justify-content:space-between;gap:5px;border:1px solid var(--border);background:var(--bg2);color:var(--sub);white-space:nowrap;min-width:0}
 .pro-cost-stat.sort-stat{font-family:inherit;cursor:pointer;text-align:left}
 .pro-cost-stat.sort-stat:hover,.pro-cost-stat.sort-stat.sorted{border-color:var(--accent);background:var(--accent-soft)}
 .pro-cost-stat .pro-sort-arrow{font-size:10px;color:var(--faint);opacity:.55}
 .pro-cost-stat.sort-stat.sorted .pro-sort-arrow{color:var(--accent);opacity:1}
 .pro-cost-stat i{font-style:normal;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;color:var(--faint)}
-.pro-cost-stat b{font-size:11px;font-variant-numeric:tabular-nums;color:var(--text)}
+.pro-cost-stat b{font-size:11px;font-variant-numeric:tabular-nums;color:var(--text);margin-left:auto;text-align:right;min-width:58px}
 .pro-cost-stat.ot b{color:var(--amber)}
 .pro-table-controls .pro-cost-stat.total{margin-top:0;background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 26%,var(--border))}
 .pro-cost-stat.total b{color:var(--accent)}
@@ -2047,9 +2047,9 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .pro-search.has-value .pro-search-clear{display:grid;place-items:center}
 .pro-search-clear:hover{background:var(--red-soft);color:var(--red)}
 
-/* Bảng production — nhóm tiền đi liền nhau: Chi phí → OT → Còn trả → Thanh toán */
+/* Bảng production — full ngang, tách riêng Còn trả và Thanh toán */
 #panel-pro .pro-prod-scroll{max-height:none;overflow-x:auto;overflow-y:visible}
-#panel-pro .prod-table{width:100%;min-width:1120px;table-layout:fixed}
+#panel-pro .prod-table{width:100%;min-width:1040px;table-layout:fixed}
 #panel-pro .prod-table th,#panel-pro .prod-table td{
   padding:7px 8px;box-sizing:border-box;overflow:hidden;vertical-align:middle
 }
@@ -2057,13 +2057,13 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 #panel-pro .prod-table tbody td{height:48px}
 /* # · Freelancer · Hạng mục · Chi phí · OT · Còn trả · Thanh toán · QR */
 #panel-pro .prod-table th:nth-child(1){width:48px}
-#panel-pro .prod-table th:nth-child(2){width:15%}
+#panel-pro .prod-table th:nth-child(2){width:16%}
 #panel-pro .prod-table th:nth-child(3){width:auto}
-#panel-pro .prod-table th:nth-child(4){width:126px}
-#panel-pro .prod-table th:nth-child(5){width:112px}
-#panel-pro .prod-table th:nth-child(6){width:126px}
-#panel-pro .prod-table th:nth-child(7){width:116px}
-#panel-pro .prod-table th:nth-child(8){width:78px}
+#panel-pro .prod-table th:nth-child(4){width:150px}
+#panel-pro .prod-table th:nth-child(5){width:130px}
+#panel-pro .prod-table th:nth-child(6){width:135px}
+#panel-pro .prod-table th:nth-child(7){width:126px}
+#panel-pro .prod-table th:nth-child(8){width:90px}
 #panel-pro .prod-table td.col-fl{overflow:hidden}
 #panel-pro .prod-table td.stt{text-align:center}
 #panel-pro .prod-table td.stt .rownum{
@@ -2071,15 +2071,6 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   font-variant-numeric:tabular-nums;font-weight:650;color:var(--sub);font-size:12px
 }
 #panel-pro .prod-table td.num{text-align:right}
-#panel-pro .prod-table th:nth-child(4),#panel-pro .prod-table td:nth-child(4),
-#panel-pro .prod-table th:nth-child(5),#panel-pro .prod-table td:nth-child(5),
-#panel-pro .prod-table th:nth-child(6),#panel-pro .prod-table td:nth-child(6),
-#panel-pro .prod-table th:nth-child(7),#panel-pro .prod-table td:nth-child(7){
-  background-clip:padding-box
-}
-#panel-pro .prod-table th:nth-child(4){border-left:2px solid color-mix(in srgb,var(--accent) 18%,var(--border2))}
-#panel-pro .prod-table tbody td:nth-child(4),
-#panel-pro .prod-table tfoot td:nth-child(2){border-left:2px solid color-mix(in srgb,var(--accent) 18%,var(--border2))!important}
 #panel-pro .prod-table td:nth-child(5),#panel-pro .prod-table td:nth-child(6),
 #panel-pro .prod-table td:nth-child(7){text-align:right}
 #panel-pro .prod-table tbody td{height:48px;min-height:48px;padding-top:6px;padding-bottom:6px}
@@ -2095,7 +2086,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 }
 #panel-pro .prod-table tfoot .prod-total-value{text-align:right;padding-right:10px}
 /* QR gọn trong cột cuối — contain + nền trắng, bấm để xem to */
-#panel-pro .prod-table th:nth-child(8){width:78px}
+#panel-pro .prod-table th:nth-child(8){width:90px}
 #panel-pro .qr-cell{
   width:100%;min-width:0;min-height:0;height:auto;padding:0;
   justify-content:center;align-items:center;border-radius:0;background:transparent
@@ -2111,7 +2102,6 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   display:inline-flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:650;border-radius:8px
 }
-#panel-pro .prod-table .qa-save{height:32px;min-width:56px;padding:0 8px;font-size:11px;border-radius:8px}
 /* Nút trạng thái: chưa trả = số tiền · đã trả = chỉ "Đã thanh toán" */
 .pro-pay-status{
   width:100%;max-width:100%;min-height:34px;height:34px;box-sizing:border-box;
@@ -4376,7 +4366,7 @@ function renderQuickRow(p){
       <td class="mid" data-label="OT"><input class="plain num money cell-ot" id="qa-ot" placeholder="0" value="${g.ot?nf.format(g.ot):''}"></td>
       <td data-label="Còn trả"><span class="pro-due-amount" id="qa-due">${fmt((+g.cp||0)+(+g.ot||0))}</span></td>
       <td data-label="Thanh toán"><button class="pro-pay-status quick" disabled><span>Chưa lưu</span></button></td>
-      <td class="mid" data-label="QR"><button class="qa-save" id="qa-save" title="Lưu (Enter)">Lưu</button></td>
+      <td class="mid" data-label="Thao tác"><button class="qa-save" id="qa-save" title="Lưu (Enter)">Lưu</button></td>
     </tr>`;
 
   const get = id => $(id);
