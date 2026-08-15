@@ -4104,9 +4104,10 @@ function proCalc(p){
   const ctyConLai = advance - daTraCtyUng;         /* tiền cty đưa còn chưa xài · âm = cảnh báo */
   /* Công ty còn phải chuyển = giá trị hợp đồng trừ phần đã ứng (chưa trừ chi phí — chi phí trừ ở LN) */
   const ctyConNo  = p.contract - advance;
-  /* Tiền đã thu về là số nhập tay theo từng dự án; nếu tick đã thu mà chưa nhập thì lấy tạm HĐ. */
-  const tienThuVe = proReceived(p);
   const loiRongThuVe = daTraTuUng + net;
+  const daThuVe = p.receivedDone ? proReceived(p) : 0;
+  /* Dự toán còn sẽ thu về: chỉ trừ khi đã xác nhận "Đã thu". */
+  const tienThuVe = loiRongThuVe - daThuVe;
 
   /* alias cũ để phần code khác không vỡ */
   const spentReal = thucChi;
@@ -4114,7 +4115,7 @@ function proCalc(p){
   const daChiRa = daTraTuUng + daTraCtyUng;
   const tuiMinh = daTraTuUng;
   return {prodSum, otSum, atanOtSum, ungSum, thucChi, conTra, prodcSum, ctvSum, paidSum, nPaid,
-          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe, loiRongThuVe,
+          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe, loiRongThuVe, daThuVe,
           daChiRa, tuiMinh,
           fee, vat, atan, atanRate, atanTong, atanThuc,
           advance, advRate, spentReal, netAfterAdv,
@@ -5067,7 +5068,7 @@ function renderProDetail(){
         </div>
       </div>
       <div class="pk hero" id="pk-thuve">
-        <span>★ Tiền đã thu về <button class="ht-info" id="thuve-info" title="Xem chi tiết">ⓘ</button></span>
+        <span>★ Dự toán tiền sẽ thu về <button class="ht-info" id="thuve-info" title="Xem chi tiết">ⓘ</button></span>
         <b id="pro-thuve-l">—</b>
         <i id="thuve-break"></i>
       </div>
@@ -5286,7 +5287,7 @@ function renderProDetail(){
   $('pro-received-toggle').addEventListener('click', ()=>{
     const turningOn = !p.receivedDone;
     if(turningOn && !(+p.receivedAmount||0)){
-      p.receivedAmount = +p.contract||0;
+      p.receivedAmount = Math.max(0, Math.round(proCalc(p).loiRongThuVe));
       $('pro-received').value = nf.format(p.receivedAmount);
     }
     if(turningOn){
@@ -5319,13 +5320,14 @@ function renderProDetail(){
     p.advAuto = false; p.advance = goiY;
     $('pro-adv').value = nf.format(goiY); calc();
   });
-  /* ⓘ breakdown của "Tiền đã thu về" */
+  /* ⓘ breakdown của "Dự toán tiền sẽ thu về" */
   $('thuve-info').addEventListener('click', ()=>{
     const c = proCalc(p);
-    alert('TIỀN ĐÃ THU VỀ = số tiền nhập ở ô "Tiền đã thu"\n\n'
-      + 'Đã thu: ' + fmt(c.tienThuVe) + '\n'
-      + 'Trạng thái: ' + (p.receivedDone ? 'Đã thu đủ' : 'Đang tracking') + '\n\n'
-      + 'Tham khảo lợi nhuận:\n'
+    alert('DỰ TOÁN TIỀN SẼ THU VỀ\n\n'
+      + 'Dự toán ban đầu: ' + fmt(c.loiRongThuVe) + '\n'
+      + 'Đã xác nhận thu: ' + fmt(c.daThuVe) + '\n'
+      + 'Còn sẽ thu: ' + fmt(c.tienThuVe) + '\n\n'
+      + 'Chỉ khi bấm "Đã thu" thì số đã thu mới trừ khỏi dự toán và cộng vào tiền mặt.\n\n'
       + 'Lãi ròng = Hợp đồng ' + fmt(p.contract) + '\n'
       + '  − CP sản xuất + OT ' + fmt(c.thucChi) + '\n'
       + '  − Hoá đơn & A Tân  ' + fmt(c.chiPhiKhac) + '\n'
@@ -5609,12 +5611,12 @@ function calc(){
     const bar = $('pro-margin-bar');
     bar.style.width = Math.max(0, Math.min(100, mgPct)) + '%';
     bar.style.background = c.net >= 0 ? 'var(--green)' : 'var(--red)';
-    /* Số hero: tiền thật đã thu của dự án, nhập tay để dashboard không tự suy diễn. */
+    /* Số hero: dự toán còn sẽ thu; chỉ giảm khi bấm xác nhận đã thu. */
     const tv = $('pro-thuve-l');
     tv.textContent = fmt(c.tienThuVe);
     tv.className = 'sh-val ' + (c.tienThuVe >= 0 ? 'pos' : 'neg');
     $('thuve-break').textContent =
-      (ap.receivedDone ? 'Đã thu đủ' : 'Đang tracking') + ' · HĐ ' + fmtShort(ap.contract) + ' ₫';
+      'Dự toán ' + fmtShort(c.loiRongThuVe) + ' ₫ − đã thu ' + fmtShort(c.daThuVe) + ' ₫';
     /* công ty còn nợ + 2 cảnh báo (brief mục 5) */
     const ctyNoEl = $('pro-ctyno-l');
     ctyNoEl.textContent = fmt(c.ctyConNo);
@@ -5733,7 +5735,7 @@ function calc(){
      Production chỉ tính đúng số "Tiền thu về"; không lấy tổng hợp đồng. */
   const receivableTotal = proThuVe + jobTotal + sumBS;
   const debtWithoutShinhan = totalDebt - loanInterest;
-  const cashLeftFromReceivables = receivableTotal - debtWithoutShinhan;
+  const cashLeftFromReceivables = hienCo + receivableTotal - debtWithoutShinhan;
   set('ov-receivable-total', receivableTotal, true);
   set('ov-receivable-pro', proThuVe);
   set('ov-receivable-job', jobTotal);
