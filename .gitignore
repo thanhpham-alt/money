@@ -35,6 +35,12 @@ money-app/prisma/dev.db
 # Dashboard backups (local only)
 dashboard-v2.bak-*.html
 
+# Seed / financial data (never push public)
+money2026-seed.*
+bluescope-public-data.*
+money-app/public/money2026-seed.*
+money-app/public/bluescope-public-data.*
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
