@@ -2331,14 +2331,7 @@ body.public-mode #panel-bluescope.active{display:block!important}
 .bs-mini-tot i{font-style:normal;font-size:8.5px;font-weight:750;text-transform:uppercase;color:var(--faint);letter-spacing:.25px}
 .bs-mini-tot b{font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
 .bs-mini-tot.accent b{color:var(--green)}
-/* Public Bluescope = chỉ còn bảng booking, không lộ phần quản trị / chi phí CTV / còn lại */
-body.public-mode .bs-overview-strip,
-body.public-mode .bs-budget-panel,
-body.public-mode .bs-rate-section,
-body.public-mode #bs-total,
-body.public-mode #bs-received,
-body.public-mode #bs-quay,
-body.public-mode #bs-dung,
+/* Public Bluescope = giống admin nhưng ẩn Chi phí CTV, Còn lại, và nút quản trị */
 body.public-mode .bs-overview-strip .bs-kpi.ctv,
 body.public-mode .bs-overview-strip .bs-kpi.remain-kpi,
 body.public-mode .bs-table th:nth-child(12),
@@ -2347,7 +2340,6 @@ body.public-mode .bs-table th:nth-child(13),
 body.public-mode .bs-table td.bs-cell-remain,
 body.public-mode .bs-table th:nth-child(14),
 body.public-mode .bs-table td.bs-cell-action,
-body.public-mode .bs-public-export,
 body.public-mode #bs-budget-add,
 body.public-mode #bs-budget-add-row,
 body.public-mode .bs-budget-del,
