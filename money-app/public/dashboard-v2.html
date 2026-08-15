@@ -3132,7 +3132,7 @@ const DEFAULT = {
     ["SCB",8610000,6903000],["Tiền cố định (tiền nhà + sinh hoạt)",0,8000000]
   ],
   pros:[
-    { id:'p1', name:'7.8 LG shooting', client:'LG', contract:113000000, feeRate:4, vatRate:8, atan:16000000,
+    { id:'p1', name:'7.8 LG shooting', client:'LG', contract:113000000, feeRate:4, vatRate:8, atan:15000000,
       prod:[
         {ten:'TRƯƠNG MINH',note:'',cp:4000000,ot:false,otTien:0,ung:false,ungTien:0,crewId:'c1786159209890b8xm',loai:'ctv',paid:false},
         {ten:'Thịnh',note:'',cp:3000000,ot:false,otTien:0,ung:false,ungTien:0,crewId:'c1786200277298sf4n',loai:'ctv',paid:false},
@@ -3392,6 +3392,30 @@ if(!S.bsDatabaseRestoreV1){
   S.bsDatabaseRestoreV1 = true;
 }
 
+/* Bản mẫu "Dự án 1" + crew trống là data rỗng. Khôi phục LG + freelancer từ DEFAULT. */
+function isEmptyProdTemplate(st){
+  const p = (st && st.pros || []).find(x=>x.id===st.activePro) || (st && st.pros || [])[0];
+  if(!p) return true;
+  const name = String(p.name||'').trim().toLowerCase();
+  const crew = (st.crew||[]).filter(c=>String(c.ten||'').trim());
+  const rows = p.prod || [];
+  const looksTemplate = rows.some(r=>{
+    const ten = String(Array.isArray(r) ? r[0] : (r && r.ten) || '');
+    return /^(Camop 1|Đạo diễn|DOP)$/i.test(ten);
+  });
+  return (!crew.length) && (name === 'dự án 1' || name === 'du an 1' || looksTemplate && rows.length >= 20 && !crew.length);
+}
+if(!S.prodLgRestoreV2 && isEmptyProdTemplate(S) && DEFAULT.pros && DEFAULT.pros.length){
+  try{ localStorage.setItem(LS_KEY + '_before_lg_restore', JSON.stringify(S)); }catch(e){}
+  S.pros = JSON.parse(JSON.stringify(DEFAULT.pros));
+  S.crew = JSON.parse(JSON.stringify(DEFAULT.crew||[]));
+  S.activePro = S.pros[0].id;
+  S.pros.forEach(p=>{
+    if(/LG/i.test(p.name||'')){ p.atan = 15000000; p.atanAuto = false; }
+  });
+  S.prodLgRestoreV2 = true;
+}
+
 document.documentElement.dataset.theme = S.theme || 'light';
 
 let STATE_REVISION = Number(S._revision || 0);
@@ -3448,12 +3472,19 @@ async function pullStateFromServer(){
     }
     const serverRev = Number(json.revision || data._revision || 0);
     const serverScore = stateScore(data);
+    const serverHasCrew = (data.crew||[]).some(c=>String(c.ten||'').trim());
+    const localEmpty = isEmptyProdTemplate(S);
+    if(localEmpty && serverHasCrew){
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(data));
+      return 'reload';
+    }
     if(serverRev > STATE_REVISION || serverScore > stateScore(S) + 12){
       localStorage.setItem(LS_KEY, JSON.stringify(data));
       localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(data));
       return 'reload';
     }
-    if(STATE_REVISION > serverRev) pushStateToServer();
+    if(STATE_REVISION > serverRev && !isEmptyProdTemplate(S)) pushStateToServer();
   }catch(e){}
   return false;
 }

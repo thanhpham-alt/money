@@ -10,13 +10,20 @@ function toRevision(value: unknown): bigint {
   return BigInt(Math.trunc(n));
 }
 
+function jsonNoStore(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: { "Cache-Control": "no-store, must-revalidate" },
+  });
+}
+
 /** GET /api/state — lấy state dashboard mới nhất */
 export async function GET() {
   const row = await prisma.dashboardState.findUnique({ where: { id: "default" } });
   if (!row) {
-    return NextResponse.json({ data: null, revision: 0 });
+    return jsonNoStore({ data: null, revision: 0 });
   }
-  return NextResponse.json({
+  return jsonNoStore({
     data: row.data,
     revision: Number(row.revision),
     updatedAt: row.updatedAt,
@@ -34,7 +41,7 @@ export async function PUT(request: NextRequest) {
   const existing = await prisma.dashboardState.findUnique({ where: { id: "default" } });
 
   if (existing && existing.revision > incomingRev) {
-    return NextResponse.json({
+    return jsonNoStore({
       data: existing.data,
       revision: Number(existing.revision),
       stale: true,
@@ -47,7 +54,7 @@ export async function PUT(request: NextRequest) {
     update: { data: body.data, revision: incomingRev },
   });
 
-  return NextResponse.json({
+  return jsonNoStore({
     ok: true,
     revision: Number(row.revision),
     updatedAt: row.updatedAt,
