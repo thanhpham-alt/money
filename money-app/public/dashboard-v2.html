@@ -6989,8 +6989,8 @@ function parseBankReceipt(raw){
   else if(/MOMO/.test(upper)) bank = 'MOMO';
 
   let person = '';
-  const pm = text.match(/(?:toi|to|den)\s+([A-Z][A-Z\s]{2,40})/i)
-          || raw.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ\s]{2,40})/i);
+  const pm = text.match(/(?:toi|to|den)\s+([A-Z][A-Z ]{2,40}?)(?=\s+(?:VND|VNĐ|D|TAI KHOAN|NGAY|LOI NHAN)|$)/i)
+          || raw.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ ]{2,40}?)(?=\s+(?:VND|VNĐ)|$)/i);
   if(pm) person = pm[1].replace(/\s+/g,' ').trim();
 
   let memo = '';
