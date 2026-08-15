@@ -1,15 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 /**
  * POST /api/daily-expenses/ocr
  * Body: { imageBase64: string, mimeType?: string }
  * Response: { amount, description, occurredAt, bankRef, bank, kind, category, confidence }
  *
- * KHÔNG lưu ảnh. Gọi Gemini 2.0 Flash Vision, parse response, trả JSON.
+ * KHÔNG lưu ảnh. Gọi Gemini Vision, parse response, trả JSON.
+ * Key lấy từ GEMINI_API_KEY env hoặc Settings.geminiApiKey trên Neon.
  */
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+async function resolveGemini() {
+  const envKey = (process.env.GEMINI_API_KEY || "").trim();
+  const envModel = (process.env.GEMINI_MODEL || "").trim();
+  if (envKey) {
+    return { key: envKey, model: envModel || "gemini-2.5-flash" };
+  }
+  const s = await prisma.settings.findUnique({ where: { id: "default" } });
+  const key = (s?.geminiApiKey || "").trim();
+  const model = (s?.geminiModel || envModel || "gemini-2.5-flash").trim();
+  return { key, model };
+}
 
 const PROMPT = `Bạn đọc screenshot chuyển khoản / biên lai app ngân hàng Việt Nam (Techcombank, Vietcombank, MB, TPBank, OCB, SCB, BIDV, ACB, MoMo, ZaloPay…).
 
@@ -48,6 +59,7 @@ type OcrResult = {
 };
 
 export async function POST(request: NextRequest) {
+  const { key: GEMINI_API_KEY, model: GEMINI_MODEL } = await resolveGemini();
   if (!GEMINI_API_KEY) {
     return NextResponse.json(
       { error: "GEMINI_API_KEY chưa được cấu hình trên server" },

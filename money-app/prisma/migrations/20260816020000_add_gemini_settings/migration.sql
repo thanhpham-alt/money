@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "geminiApiKey" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "geminiModel" TEXT NOT NULL DEFAULT 'gemini-2.5-flash';

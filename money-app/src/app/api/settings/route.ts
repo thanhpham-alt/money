@@ -11,7 +11,11 @@ async function ensureSettings() {
 
 export async function GET() {
   const s = await ensureSettings();
-  return NextResponse.json(s);
+  const { geminiApiKey, ...rest } = s;
+  return NextResponse.json({
+    ...rest,
+    geminiConfigured: Boolean(geminiApiKey && geminiApiKey.trim()),
+  });
 }
 
 export async function PATCH(req: Request) {
@@ -36,6 +40,12 @@ export async function PATCH(req: Request) {
       ...(body.bluescopeUrl != null
         ? { bluescopeUrl: String(body.bluescopeUrl) }
         : {}),
+      ...(body.geminiApiKey != null
+        ? { geminiApiKey: String(body.geminiApiKey).trim() }
+        : {}),
+      ...(body.geminiModel != null
+        ? { geminiModel: String(body.geminiModel).trim() || "gemini-2.5-flash" }
+        : {}),
     },
   });
 
@@ -47,5 +57,9 @@ export async function PATCH(req: Request) {
     });
   }
 
-  return NextResponse.json(s);
+  const { geminiApiKey: _k, ...safe } = s;
+  return NextResponse.json({
+    ...safe,
+    geminiConfigured: Boolean(s.geminiApiKey && s.geminiApiKey.trim()),
+  });
 }

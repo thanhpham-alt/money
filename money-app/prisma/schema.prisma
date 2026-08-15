@@ -16,6 +16,9 @@ model Settings {
   aTanShareRate  Float    @default(0.2)
   /// Link Google Sheet booking (nhập liệu thô)
   bluescopeUrl   String   @default("https://docs.google.com/spreadsheets/d/1ygn6O9Ej1-AmaeCVDOp6UD3pnbiyhG0c-ZUJ4MgNzdo/edit")
+  /// Gemini OCR — chỉ dùng server-side, không trả raw key ra client
+  geminiApiKey   String   @default("")
+  geminiModel    String   @default("gemini-2.5-flash")
   updatedAt      DateTime @updatedAt
 }
 
