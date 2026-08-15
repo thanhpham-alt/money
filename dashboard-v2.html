@@ -2165,6 +2165,18 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-card-bank .ov-card-icon{background:var(--blue-soft);color:var(--blue)}.ov-card-bank .ov-stat-value{color:var(--blue)}
 .ov-bank-next{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border2)}
 .ov-bank-next span{font-size:8px;color:var(--faint)}.ov-bank-next b{font-size:9.5px;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ov-loan-open{margin-left:auto;border:0;background:transparent;color:var(--blue);font:inherit;font-size:8.5px;font-weight:750;cursor:pointer;white-space:nowrap}
+.ov-loan-open:hover{text-decoration:underline}
+.loan-modal-box{max-width:720px}.loan-detail-hero{padding:15px 17px;border:1px solid color-mix(in srgb,var(--blue) 28%,var(--border));
+  border-radius:13px;background:linear-gradient(145deg,var(--blue-soft),var(--card))}
+.loan-detail-hero span,.loan-detail-item span{display:block;color:var(--faint);font-size:9px;font-weight:750;text-transform:uppercase;letter-spacing:.35px}
+.loan-detail-hero b{display:block;margin-top:5px;text-align:right;color:var(--blue);font-size:26px;font-variant-numeric:tabular-nums}
+.loan-detail-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:9px}
+.loan-detail-item{padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+.loan-detail-item b{display:block;margin-top:5px;text-align:right;color:var(--text);font-size:13px;font-variant-numeric:tabular-nums}
+.loan-detail-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px;padding:9px 11px;
+  border-radius:10px;background:var(--bg2);color:var(--sub);font-size:10px}.loan-detail-meta b{color:var(--text)}
+@media(max-width:620px){.loan-detail-grid{grid-template-columns:1fr}.loan-detail-hero b{font-size:22px}}
 
 @media(max-width:1080px){
   .ov-dashboard{grid-template-columns:1fr 1fr}.ov-income-card{grid-column:1/-1}
@@ -2368,7 +2380,8 @@ body.public-mode #panel-bs-public{display:none!important}
     </section>
 
     <section class="ov-card ov-stat-card ov-card-bank">
-      <div class="ov-card-head"><span class="ov-card-icon">🏦</span><div><small>Home Equity Loan</small><h2>Nợ ngân hàng · Shinhan</h2></div></div>
+      <div class="ov-card-head"><span class="ov-card-icon">🏦</span><div><small>Home Equity Loan</small><h2>Nợ ngân hàng · Shinhan</h2></div>
+        <button type="button" class="ov-loan-open" data-open="loan-fold">Xem khoản vay</button></div>
       <b class="ov-stat-value" id="ov-bank-debt">0 ₫</b>
       <small class="ov-stat-note">Giảm <b id="ov-bank-principal">0 ₫</b> vào ngày 10 mỗi tháng</small>
       <div class="ov-bank-next"><span>Kỳ giảm tiếp theo</span><b id="ov-bank-next">—</b></div>
@@ -2411,7 +2424,7 @@ body.public-mode #panel-bs-public{display:none!important}
         </div>
         <div class="land-flow-op" aria-hidden="true">−</div>
         <div class="land-flow-card loan">
-          <div class="land-flow-head"><span>Dư nợ Shinhan</span><button class="land-loan-link" data-open="debt-fold">Xem chi tiết</button></div>
+          <div class="land-flow-head"><span>Dư nợ Shinhan</span><button class="land-loan-link" data-open="loan-fold">Xem chi tiết</button></div>
           <strong id="t_current_loan"></strong>
           <small class="land-loan-interest"><span>Lãi tháng này</span><b id="t_loan_interest"></b></small>
         </div>
@@ -2424,6 +2437,21 @@ body.public-mode #panel-bs-public{display:none!important}
   </div>
     </div>
    </div>
+  </div>
+
+  <div class="modal" id="loan-fold" hidden>
+    <div class="modal-box loan-modal-box">
+      <div class="modal-head"><div class="badge">NH</div><h2>Khoản vay Shinhan</h2>
+        <button class="rowbtn" data-close>✕</button></div>
+      <div class="loan-detail-hero"><span>Dư nợ hiện tại</span><b id="loan-detail-balance">0 ₫</b></div>
+      <div class="loan-detail-grid">
+        <div class="loan-detail-item"><span>Giảm gốc mỗi tháng</span><b id="loan-detail-principal">0 ₫</b></div>
+        <div class="loan-detail-item"><span>Lãi suất năm</span><b id="loan-detail-rate">0%</b></div>
+        <div class="loan-detail-item"><span>Kỳ giảm tiếp theo</span><b id="loan-detail-next">—</b></div>
+      </div>
+      <div class="loan-detail-meta"><span>Home Equity Loan · Tài khoản vay</span><b>730-004-175163</b></div>
+      <div class="atan-modal-actions"><button class="qa-save" data-close>Xong</button></div>
+    </div>
   </div>
 
   <div class="modal" id="debt-fold" hidden>
@@ -5597,7 +5625,12 @@ function calc(){
   set('ov-card-debt', sumDebt);
   set('ov-bank-debt', loanOutstanding);
   set('ov-bank-principal', landLoan.principalMonthly);
-  $('ov-bank-next').textContent = fullVnDate(loanNextDue(landLoan));
+  const nextLoanDue = fullVnDate(loanNextDue(landLoan));
+  $('ov-bank-next').textContent = nextLoanDue;
+  set('loan-detail-balance', loanOutstanding);
+  set('loan-detail-principal', landLoan.principalMonthly);
+  $('loan-detail-rate').textContent = landLoan.annualRate.toLocaleString('vi-VN') + '%';
+  $('loan-detail-next').textContent = nextLoanDue;
 
   save();
 }
@@ -5784,7 +5817,7 @@ document.addEventListener('click', e=>{
 /* ---------- popup ở header: Góp vốn đất · Freelancer · Nợ thẻ ----------
    Chúng nằm trong các panel trong HTML cho dễ đọc, nhưng .modal là position:fixed
    nên phải chuyển ra ngoài body, không thì tab khác ẩn panel là popup cũng mất. */
-['land-fold','crew-modal','debt-fold'].forEach(id => document.body.appendChild($(id)));
+['land-fold','loan-fold','crew-modal','debt-fold'].forEach(id => document.body.appendChild($(id)));
 const openPop  = id => { const m = $(id); if(m) m.hidden = false; };
 const closePop = ()  => document.querySelectorAll('.modal[id$="-fold"], #crew-modal').forEach(m => m.hidden = true);
 $('open-land').addEventListener('click', ()=> openPop('land-fold'));
