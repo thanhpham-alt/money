@@ -2338,7 +2338,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <button class="iconbtn" id="open-land" title="Tất toán đất &amp; khoản vay hiện tại">🏡 Tất toán đất
         <span class="hd-meta" id="land-pill"></span></button>
       <button class="iconbtn" id="open-crew" title="Danh bạ freelancer">👥 Freelancer</button>
-      <button class="iconbtn" id="open-debt" title="Nợ &amp; công nợ thẻ">💳 Nợ thẻ
+      <button class="iconbtn" id="open-debt" title="Tổng nợ hiện tại">💳 Tổng nợ
         <span class="hd-meta" id="debt-pill"></span></button>
     </div>
   </div>
@@ -2364,7 +2364,7 @@ body.public-mode #panel-bs-public{display:none!important}
   <!-- Dashboard công nợ và nghĩa vụ nợ -->
   <div id="hero-cards" class="ov-dashboard" aria-label="Dashboard công nợ và các khoản nợ">
     <section class="ov-card ov-income-card">
-      <div class="ov-card-head"><span class="ov-card-icon">CN</span><div><small>Tổng Production + Job/Linh tinh + Bluescope</small><h2>Công nợ</h2></div></div>
+      <div class="ov-card-head"><span class="ov-card-icon">CN</span><div><small>Tiền thu về Production + Job/Linh tinh + Bluescope</small><h2>Công nợ</h2></div></div>
       <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
       <div class="ov-source-grid">
         <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
@@ -2374,9 +2374,9 @@ body.public-mode #panel-bs-public{display:none!important}
     </section>
 
     <section class="ov-card ov-stat-card ov-card-debt">
-      <div class="ov-card-head"><span class="ov-card-icon">💳</span><div><small>Nợ hiện tại</small><h2>Nợ thẻ</h2></div></div>
+      <div class="ov-card-head"><span class="ov-card-icon">💳</span><div><small>Nợ hiện tại</small><h2>Tổng nợ</h2></div></div>
       <b class="ov-stat-value" id="ov-card-debt">0 ₫</b>
-      <small class="ov-stat-note">Chỉ lấy các khoản trong bảng Nợ thẻ</small>
+      <small class="ov-stat-note">Nợ phải trả + nợ thẻ + lãi vay tháng</small>
     </section>
 
     <section class="ov-card ov-stat-card ov-card-bank">
@@ -2457,7 +2457,7 @@ body.public-mode #panel-bs-public{display:none!important}
   <div class="modal" id="debt-fold" hidden>
    <div class="modal-box xwide">
     <div class="modal-head">
-      <div class="badge">N</div><h2>Nợ &amp; công nợ thẻ</h2>
+      <div class="badge">N</div><h2>Tổng nợ</h2>
       <span class="fs-meta" id="debt-meta"></span>
       <button class="rowbtn" data-close>✕</button>
     </div>
@@ -2470,7 +2470,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="line"><span>Mom</span><b id="n_f4"></b></div>
       <div class="line"><span>Shopcash còn lại</span><b id="n_f5"></b></div>
       <div class="line"><span>Thẻ tín dụng</span><b id="n_f6"></b></div>
-      <div class="total"><span>Tổng công nợ hiện tại</span><b id="n_f7"></b></div>
+      <div class="total"><span>Tổng nợ</span><b id="n_f7"></b></div>
       </div>
 
       <div class="section compact">
@@ -2899,9 +2899,15 @@ const DEFAULT = {
   inputs:{}
 };
 
-let S;
-try{ S = Object.assign({}, DEFAULT, JSON.parse(localStorage.getItem(LS_KEY))||{}); }
+let S, INITIAL_LOCAL_STATE = null;
+try{
+  INITIAL_LOCAL_STATE = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+  S = Object.assign({}, DEFAULT, INITIAL_LOCAL_STATE || {});
+}
 catch(e){ S = JSON.parse(JSON.stringify(DEFAULT)); }
+/* Ghi nhớ trạng thái ngay lúc mở trang. calc() có thể lưu DEFAULT trước khi seed chạy,
+   nên không được dùng localStorage ở cuối quá trình để đoán đây có phải lần đầu hay không. */
+const HAD_LOCAL_STATE_ON_BOOT = !!(INITIAL_LOCAL_STATE && typeof INITIAL_LOCAL_STATE === 'object');
 if(!S.pros || !S.pros.length) S.pros = JSON.parse(JSON.stringify(DEFAULT.pros));
 if(!Array.isArray(S.crew)) S.crew = [];
 if(!Array.isArray(S.jobAgencies)) S.jobAgencies = [];
@@ -3009,11 +3015,29 @@ if(!S.bsRepairV2){
 
 document.documentElement.dataset.theme = S.theme || 'light';
 
+let STATE_REVISION = Number(S._revision || 0);
+let STALE_SAVE_WARNED = false;
 function save(){
+  /* Một tab cũ không được phép ghi đè dữ liệu mới hơn vừa lưu từ tab khác. */
+  let latestRevision = 0;
+  try{
+    const latest = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    latestRevision = Number(latest && latest._revision || 0);
+  }catch(e){}
+  if(latestRevision > STATE_REVISION){
+    if(!STALE_SAVE_WARNED){
+      console.warn('Money 2026: chặn lưu từ tab cũ vì đã có dữ liệu mới hơn.');
+      STALE_SAVE_WARNED = true;
+    }
+    return false;
+  }
   S.inputs = {};
   document.querySelectorAll('input[id]').forEach(i=>{ S.inputs[i.id] = i.value; });
   S.theme = document.documentElement.dataset.theme;
+  STATE_REVISION = Math.max(Date.now(), STATE_REVISION + 1);
+  S._revision = STATE_REVISION;
   localStorage.setItem(LS_KEY, JSON.stringify(S));
+  return true;
 }
 
 /* ================= generic table renderer ================= */
@@ -3701,8 +3725,11 @@ function saveJobQuick(){
   rememberJobAccount(JQ.account);
   if(JQ.agency && !S.jobAgencies.some(x=>jobNameKey(x)===jobNameKey(JQ.agency))) S.jobAgencies.push(JQ.agency);
   /* Job vừa nhập luôn đứng đầu; bỏ sort cũ để không bị đẩy xuống lại ngay sau khi lưu. */
-  S.jobs.unshift([JQ.ten, JQ.agency, JQ.tong, JQ.cp, JQ.thu, JQ.date || todayISO(), JQ.account||'']);
+  const savedPaid = !!JQ.thu;
+  S.jobs.unshift([JQ.ten, JQ.agency, JQ.tong, JQ.cp, savedPaid, JQ.date || todayISO(), JQ.account||'']);
   JSORT = {col:-1, dir:1};
+  /* Sau khi lưu, mở đúng nhóm chứa dòng mới để dòng đầu tiên luôn nhìn thấy được. */
+  JVIEW = savedPaid ? 'roi' : 'chua';
   JQ = {ten:'', agency:'', account:'', tong:0, cp:0, thu:false, date:todayISO()};
   renderJobs(); calc(); $('jq-ten').focus();
 }
@@ -5378,6 +5405,7 @@ function calc(){
   const totalDebt = nTri + nMom + nShop + sumDebt + loanInterest;
   set('n_f4', nMom); set('n_f5', nShop); set('n_f6', sumDebt);
   set('n_f7', totalDebt);
+  $('debt-pill').textContent = fmtShort(totalDebt) + ' ₫';
 
   const jobChuaThu = S.jobs.filter(r=>!r[4]).reduce((t,r)=>t+((+r[2]||0)-(+r[3]||0)),0);
   set('bs-total', sumBS); set('job-total', jobChuaThu); set('debt-total', sumDebt);
@@ -5437,13 +5465,12 @@ function calc(){
   $('debt-meta').innerHTML =
     `<b>${S.debts.length}</b> khoản thẻ · dư nợ <b>${fmtShort(debtGross)} ₫</b>` +
     ` · trả tháng này <b class="c-amber">${fmtShort(debtPaid)} ₫</b>` +
-    ` · còn lại <b class="${sumDebt>0?'c-red':'c-green'}">${fmt(sumDebt)}</b>`;
-  $('debt-pill').textContent = fmtShort(sumDebt) + ' ₫';
-
+    ` · còn lại <b class="${sumDebt>0?'c-red':'c-green'}">${fmt(sumDebt)}</b>` +
+    ` · tổng nợ <b class="${totalDebt>0?'c-red':'c-green'}">${fmt(totalDebt)}</b>`;
   /* --- Pro --- */
-  let proContract=0, proProd=0, proFee=0, proNet=0;
+  let proContract=0, proThuVe=0, proProd=0, proFee=0, proNet=0;
   S.pros.forEach(p=>{ const c=proCalc(p);
-    proContract+=p.contract; proProd+=c.prodSum+c.otSum; proFee+=c.otherCost; proNet+=c.net; });
+    proContract+=p.contract; proThuVe+=c.tienThuVe; proProd+=c.prodSum+c.otSum; proFee+=c.otherCost; proNet+=c.net; });
   set('pro-contract', proContract); set('pro-cost', proProd); set('pro-fee', proFee);
   set('pro-net', proNet, true);
 
@@ -5616,13 +5643,13 @@ function calc(){
 
   const assets = bonus + land2 + land1;
   /* ---- Dashboard Tổng quan V3 ----
-     Công nợ = tổng giá trị Production + Job/Linh tinh + Booking Bluescope. */
-  const receivableTotal = proContract + jobTotal + sumBS;
+     Production chỉ tính đúng số "Tiền thu về"; không lấy tổng hợp đồng. */
+  const receivableTotal = proThuVe + jobTotal + sumBS;
   set('ov-receivable-total', receivableTotal, true);
-  set('ov-receivable-pro', proContract);
+  set('ov-receivable-pro', proThuVe);
   set('ov-receivable-job', jobTotal);
   set('ov-receivable-bs', sumBS);
-  set('ov-card-debt', sumDebt);
+  set('ov-card-debt', totalDebt);
   set('ov-bank-debt', loanOutstanding);
   set('ov-bank-principal', landLoan.principalMonthly);
   const nextLoanDue = fullVnDate(loanNextDue(landLoan));
@@ -5918,24 +5945,15 @@ if($('bs-open-public')) $('bs-open-public').addEventListener('click', ()=>{
   window.open(url, '_blank', 'noopener');
 });
 
-/* Seed deploy (ưu tiên window.MONEY2026_SEED nhúng sẵn — không phụ thuộc fetch):
-   - lần đầu / seed version thấp hơn → nạp
-   - thiếu Production LG (pros rỗng / không có 7.8 LG) → nạp
-   - ?seed=force → ép nạp lại */
+/* Seed deploy chỉ được nạp ở lần mở đầu tiên.
+   Tuyệt đối không dùng seed version / tên dự án để ghi đè dữ liệu người dùng hiện có.
+   ?seed=force vẫn là thao tác chủ động, có lưu một bản phục hồi trước khi thay thế. */
 async function ensureDeploySeed(){
   const force = new URLSearchParams(location.search).get('seed') === 'force';
   let local = null;
   try { local = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e){ local = null; }
-
-  const embVer = (typeof MONEY2026_SEED !== 'undefined' && MONEY2026_SEED)
-    ? Number(MONEY2026_SEED._seedVersion || 0) : 0;
-  const localVer = Number(local && local._seedVersion || 0);
-  const pros = (local && Array.isArray(local.pros)) ? local.pros : [];
-  const missingLG = !pros.length || !pros.some(p => /LG|7\.8/i.test(String(p && p.name || '') + String(p && p.client || '')));
-
-  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1' && local && localVer >= embVer && embVer > 0 && !missingLG){
-    return false;
-  }
+  if(!force && HAD_LOCAL_STATE_ON_BOOT) return false;
+  if(!force && sessionStorage.getItem('money2026_seed_tried') === '1') return false;
   sessionStorage.setItem('money2026_seed_tried', '1');
 
   let data = null;
@@ -5949,10 +5967,9 @@ async function ensureDeploySeed(){
   }
   if(!data || typeof data !== 'object') return false;
 
-  const remoteVer = Number(data._seedVersion || 0);
-  const needUpgrade = remoteVer > 0 && localVer < remoteVer;
-  const needFillLG = missingLG && Array.isArray(data.pros) && data.pros.length > 0;
-  if(!force && local && !needUpgrade && !needFillLG) return false;
+  if(force && local){
+    try{ localStorage.setItem(LS_KEY + '_before_force_seed', JSON.stringify(local)); }catch(e){}
+  }
 
   localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({}, DEFAULT, data)));
   if(force){
