@@ -1549,6 +1549,12 @@ input.datecell.bad{border-color:var(--red);background:var(--red-soft)}
   background:var(--amber-soft);border-radius:10px;padding:8px 14px}
 .pd-total span{font-size:11px;color:var(--sub);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .pd-total b{font-size:17px;color:var(--amber);font-variant-numeric:tabular-nums}
+.pdstrip .pd-outbtn{margin-left:8px;flex:none;cursor:pointer}
+.pdstrip-out{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px 14px;
+  border:1px dashed color-mix(in srgb,var(--amber) 45%,var(--border));border-radius:11px;background:var(--amber-soft)}
+.pdstrip-out b{color:var(--amber);font-size:13px}
+.pdstrip-out i{font-style:normal;font-size:12px;color:var(--faint)}
+.pdstrip-out .pd-sum{margin-left:auto}
 /* nút tick thanh toán (chỉ 2 trạng thái) */
 .tickbtn,.paidbtn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--card);
   color:var(--faint);font-size:14px;font-weight:800;cursor:pointer;line-height:1;transition:.15s}
@@ -4730,14 +4736,29 @@ function renderPdStrip(p){
   const tong = rows.reduce((s,r)=>s+rowTong(r),0);
   const paid = rows.filter(rowPaid).length;
   const open = !!p._pdOpen;
+  if(p.pdOut){
+    host.innerHTML = `
+      <div class="pdstrip-out">
+        <span class="pd-ic">🎬</span>
+        <span class="pd-tx"><b>Chi phí Producer</b>
+          <i>${rows.length} khoản đang hiện trên bảng chính</i></span>
+        <span class="pd-sum">${fmt(tong)}</span>
+        <button class="iconbtn sm" type="button" id="pd-in">Gom lại</button>
+      </div>`;
+    $('pd-in').addEventListener('click', ()=>{
+      p.pdOut = false; p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
+    });
+    return;
+  }
   host.innerHTML = `
-    <button class="pdstrip${rows.length?'':' empty'}${open?' open':''}" id="pd-open">
+    <div class="pdstrip${rows.length?'':' empty'}${open?' open':''}" id="pd-open">
       <span class="pd-ic">🎬</span>
       <span class="pd-tx"><b>Chi phí Producer</b>
         <i>${rows.length?`${rows.length} khoản · ${paid} đã thanh toán`:'chưa có khoản nào — thêm tay'}</i></span>
       <span class="pd-sum">${fmt(tong)}</span>
+      <button class="iconbtn sm pd-outbtn" type="button" id="pd-out" title="Hiện các khoản Producer trên bảng chính">Đưa ra ngoài</button>
       <span class="pd-caret">${open?'▾':'▸'}</span>
-    </button>
+    </div>
     <div class="pd-panel" ${open?'':'hidden'}>
       <div class="tablewrap">
         <table class="prod-table pd-table">
@@ -4748,11 +4769,20 @@ function renderPdStrip(p){
       </div>
       <div class="pd-actions">
         <button class="iconbtn sm" id="pd-add">+ Thêm khoản</button>
+        <button class="iconbtn sm" type="button" id="pd-out-2">Đưa ra ngoài</button>
         <div class="pd-total"><span>Tổng chi phí Producer</span><b>${fmt(tong)}</b></div>
       </div>
     </div>`;
 
-  $('pd-open').addEventListener('click', ()=>{ p._pdOpen = !p._pdOpen; renderPdStrip(p); });
+  const bringOut = ev=>{
+    ev.preventDefault(); ev.stopPropagation();
+    p.pdOut = true; p._pdOpen = false; save(); renderProd(p); renderPdStrip(p); calc();
+  };
+  $('pd-open').addEventListener('click', e=>{
+    if(e.target.closest('#pd-out')) return;
+    p._pdOpen = !p._pdOpen; renderPdStrip(p);
+  });
+  if($('pd-out')) $('pd-out').addEventListener('click', bringOut);
   if(!open) return;
 
   const drawBody = ()=>{
@@ -4790,6 +4820,7 @@ function renderPdStrip(p){
   drawBody();
 
   $('pd-add').addEventListener('click', ()=>{ p.prod.push(prodRow({loai:'producer'})); renderPdStrip(p); calc(); });
+  if($('pd-out-2')) $('pd-out-2').addEventListener('click', bringOut);
 }
 
 let PROD_FILTER = 'all';
@@ -4802,9 +4833,9 @@ function renderProd(p){
   if(dl) dl.innerHTML = S.crew.map(c=>
     `<option value="${esc(c.ten)}">${esc([c.vitri, c.sdt].filter(Boolean).join(' · '))}</option>`).join('');
 
-  /* Chế độ Tất cả giữ Producer trong dải riêng; khi lọc thanh toán phải lấy đủ mọi loại chi phí. */
+  /* Chế độ Tất cả giữ Producer trong dải riêng, trừ khi bấm “Đưa ra ngoài”. */
   let prodRows = p.prod.map((r,i)=>({r,i}));
-  if(PROD_FILTER === 'all') prodRows = prodRows.filter(o=>!isProducer(o.r));
+  if(PROD_FILTER === 'all' && !p.pdOut) prodRows = prodRows.filter(o=>!isProducer(o.r));
   if(PROD_FILTER === 'paid') prodRows = prodRows.filter(o=>rowPaid(o.r));
   if(PROD_FILTER === 'unpaid') prodRows = prodRows.filter(o=>!rowPaid(o.r));
   const searchNeedle = NORM(PROD_SEARCH);
