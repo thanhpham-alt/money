@@ -2195,12 +2195,18 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-income-card .ov-card-icon{background:rgba(255,255,255,.16);color:#fff}.ov-income-card .ov-card-head small{color:rgba(255,255,255,.68)}
 .ov-income-card .ov-card-head h2{color:#fff}.ov-main-value{display:block;margin:2px 0 11px;font-size:28px;line-height:1;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.ov-source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
+.ov-source-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .ov-source{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 7px;border:1px solid rgba(255,255,255,.17);
   border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font:inherit;text-align:left;cursor:pointer;transition:.15s}
 .ov-source:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35)}
 .ov-source span{font-size:8px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ov-source b{font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ov-source.is-static{cursor:default}
+.ov-source.is-static:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.17)}
+.ov-cash-input{width:100%;min-width:0;border:0;background:transparent;color:#fff;font:inherit;font-size:10.5px;
+  font-weight:800;font-variant-numeric:tabular-nums;padding:0;outline:none}
+.ov-cash-input::placeholder{color:rgba(255,255,255,.55)}
+.ov-cash-input:focus{background:rgba(255,255,255,.13);border-radius:6px;padding:2px 4px;margin:-2px -4px}
 
 .ov-stat-card{display:flex;flex-direction:column;overflow:hidden}
 .ov-stat-value{display:block;margin:10px 0 6px;font-size:23px;line-height:1.08;font-weight:820;
@@ -2432,7 +2438,8 @@ body.public-mode #panel-bs-public{display:none!important}
         <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
         <button type="button" class="ov-source" data-scroll="job-body"><span>Job / Linh tinh</span><b id="ov-receivable-job">0 ₫</b></button>
         <button type="button" class="ov-source" data-goto="bluescope"><span>Bluescope</span><b id="ov-receivable-bs">0 ₫</b></button>
-        <button type="button" class="ov-source"><span>Tiền hiện còn</span><b id="ov-cash-left">0 ₫</b></button>
+        <label class="ov-source is-static"><span>Tiền hiện còn</span><input type="text" class="money ov-cash-input" id="v_h3" value="37000000" placeholder="0"></label>
+        <div class="ov-source is-static"><span>Còn lại</span><b id="ov-cash-left">0 ₫</b></div>
       </div>
     </section>
 
@@ -2450,9 +2457,6 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="ov-bank-next"><span>Kỳ giảm tiếp theo</span><b id="ov-bank-next">—</b></div>
     </section>
   </div>
-
-  <!-- Giữ dữ liệu tiền mặt lịch sử, không còn hiển thị trên dashboard mới. -->
-  <input type="text" class="money" id="v_h3" value="37000000" hidden>
 
   <div class="modal" id="land-fold" hidden>
    <div class="modal-box xwide">
@@ -3899,6 +3903,7 @@ function saveJobQuick(){
   if(JQ.agency && !S.jobAgencies.some(x=>jobNameKey(x)===jobNameKey(JQ.agency))) S.jobAgencies.push(JQ.agency);
   /* Job vừa nhập luôn đứng đầu; bỏ sort cũ để không bị đẩy xuống lại ngay sau khi lưu. */
   const savedPaid = !!JQ.thu;
+  if(savedPaid) addToCashOnHand((+JQ.tong||0) - (+JQ.cp||0));
   S.jobs.unshift([JQ.ten, JQ.agency, JQ.tong, JQ.cp, savedPaid, JQ.date || todayISO(), JQ.account||'']);
   JSORT = {col:-1, dir:1};
   /* Sau khi lưu, mở đúng nhóm chứa dòng mới để dòng đầu tiên luôn nhìn thấy được. */
@@ -4036,7 +4041,14 @@ function renderJobs(){
     const isChip = inp.classList.contains('job-agency') || inp.classList.contains('job-account');
     inp.addEventListener('input', e=>{
       const i = +e.target.dataset.j, f = +e.target.dataset.f;
-      if(isMoney){ liveFormatMoney(e.target); S.jobs[i][f] = parseNum(e.target.value); }
+      if(isMoney){
+        const oldNet = (+S.jobs[i][2]||0) - (+S.jobs[i][3]||0);
+        liveFormatMoney(e.target); S.jobs[i][f] = parseNum(e.target.value);
+        if(S.jobs[i][4]){
+          const nextNet = (+S.jobs[i][2]||0) - (+S.jobs[i][3]||0);
+          addToCashOnHand(nextNet - oldNet);
+        }
+      }
       else S.jobs[i][f] = e.target.value;
       if(isChip){
         e.target.className = e.target.className
@@ -4060,6 +4072,8 @@ function renderJobs(){
   });
   body.querySelectorAll('[data-jchk]').forEach(b=> b.addEventListener('click', e=>{
     const i = +e.currentTarget.dataset.jchk;
+    const amount = (+S.jobs[i][2]||0) - (+S.jobs[i][3]||0);
+    addToCashOnHand(S.jobs[i][4] ? -amount : amount);
     S.jobs[i][4] = !S.jobs[i][4];
     renderJobs(); calc();
   }));
@@ -5823,15 +5837,15 @@ function calc(){
   $('land-pill').textContent = fmtShort(takeHome) + ' ₫';
 
   /* --- Overview --- */
-  const vonNhapTay = money('v_h3');             /* tiền mặt đang cầm — gồm Production đã tick "Đã thu" */
+  const vonNhapTay = money('v_h3');             /* tiền hiện còn — nhập tay, tự cộng khi tick "Đã thu" */
   const sumPaid   = S.jobs.filter(r=>r[4]).reduce((s,r)=>s + ((+r[2]||0)-(+r[3]||0)), 0);
   const sumUnpaid = sumJob - sumPaid;
   /* Bluescope đã thanh toán cho freelancer bằng tiền mình → trừ ra khỏi tiền đang cầm */
   const bsDaTra   = S.bluescope.reduce((t,r)=>t+bsCostPaid(r), 0);
   /* Production: tiền mình đã tự ứng ra cho CTV (mọi dự án) */
   const proTuUngAll = S.pros.reduce((t,p2)=> t + proCalc(p2).daTraTuUng, 0);
-  /* Hiện có thực tế = tiền mặt hiện có + tiền thu đã post − các khoản đã trả. */
-  const hienCo    = vonNhapTay + sumPaid - bsDaTra - proTuUngAll;
+  /* Hiện có thực tế = ô Tiền hiện còn. Các khoản thu đã được cộng thẳng vào ô này khi tick "Đã thu". */
+  const hienCo    = vonNhapTay;
   const totalHave = hienCo + sumUnpaid + bsOwed - totalDebt;   /* Tổng có (khoá) */
   set('v_d3', totalDebt);
   set('v_d4', sumUnpaid);
@@ -5852,12 +5866,12 @@ function calc(){
   const assets = bonus + land2 + land1;
   /* ---- Dashboard Tổng quan V3 ----
      Production chỉ tính đúng số "Tiền thu về"; không lấy tổng hợp đồng. */
-  const receivableTotal = proThuVe + jobTotal + sumBS;
+  const receivableTotal = proThuVe + jobChuaThu + sumBS + hienCo;
   const debtWithoutShinhan = totalDebt - loanInterest;
-  const cashLeftFromReceivables = hienCo + receivableTotal - debtWithoutShinhan;
+  const cashLeftFromReceivables = receivableTotal - debtWithoutShinhan;
   set('ov-receivable-total', receivableTotal, true);
   set('ov-receivable-pro', proThuVe);
-  set('ov-receivable-job', jobTotal);
+  set('ov-receivable-job', jobChuaThu);
   set('ov-receivable-bs', sumBS);
   set('ov-cash-left', cashLeftFromReceivables, true);
   set('ov-card-debt', totalDebt);
