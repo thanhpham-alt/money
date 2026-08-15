@@ -255,3 +255,30 @@ model CreditPayment {
   @@unique([cardId, year, month])
   @@index([cardId])
 }
+
+/// Chi tiêu hằng ngày — nhập tay hoặc OCR từ ảnh bill ngân hàng
+/// Ảnh KHÔNG lưu lên server, chỉ trích xuất text và lưu structured data
+model DailyExpense {
+  id          String   @id @default(uuid())
+  /// Ngày phát sinh giao dịch
+  occurredAt  DateTime
+  /// income = tiền vào (Đã Thu) | expense = tiền ra (Đã Chi) | job = Job linh tinh
+  kind        String   @default("expense")
+  amount      Float    @default(0)
+  /// Mô tả ngắn (tên nơi chi, người nhận…)
+  description String
+  /// Danh mục: an-uong, di-lai, mua-sam, luong, thu-nhap, khac
+  category    String   @default("khac")
+  /// Nguồn: manual | ocr
+  source      String   @default("manual")
+  /// Mã tham chiếu ngân hàng (nếu OCR từ bill)
+  bankRef     String?
+  /// Ngân hàng: TCB, TPB, OCB, SCB, MB…
+  bank        String?
+  note        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([occurredAt])
+  @@index([kind])
+}

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { cn, formatVnd } from "@/lib/utils";
 import { JOB_TYPE_LABELS, type JobType } from "@/lib/job-types";
+import { DailyPanel } from "@/features/overview/daily-panel";
 
 type Job = {
   id: string;
@@ -201,6 +202,9 @@ export function OverviewView() {
           </table>
         </div>
       </section>
+
+      {/* Hằng ngày — Job linh tinh · Đã thu · Đã chi + upload bill OCR */}
+      <DailyPanel />
 
       {/* Accordion: Công nợ & Vốn */}
       <section className="card overflow-hidden">
