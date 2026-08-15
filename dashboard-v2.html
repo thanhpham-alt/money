@@ -934,6 +934,18 @@ tr:hover .rowdel{opacity:1;pointer-events:auto}
 .pro-cost-stat.total b{color:var(--accent)}
 .pro-table-controls .pro-project-delete{display:flex;margin-left:1px;white-space:nowrap}
 @media(max-width:1180px){.pro-table-controls{flex-wrap:wrap}.pro-table-controls .pro-counts{border-left:0;padding-left:0}}
+#panel-pro .pro-main-head{
+  margin-bottom:6px;align-items:center;gap:8px;flex-wrap:wrap
+}
+#panel-pro .pro-main-head .pro-cost-stats{
+  margin-left:auto
+}
+#panel-pro .pro-toolbar-row{
+  display:flex;justify-content:flex-end;margin:0 0 8px
+}
+#panel-pro .pro-toolbar-row .pro-table-controls{
+  flex:0 1 auto
+}
 
 /* QR */
 .qr-add{background:transparent;border:1px dashed var(--border);color:var(--faint);border-radius:9px;
@@ -5265,19 +5277,23 @@ function renderProDetail(){
 
     <div class="pro-grid">
       <div class="section compact-pad">
-        <div class="sec-head"><div class="badge">SX</div><h2>Chi phí sản xuất</h2>
-          <div class="right pro-table-controls"><label class="pro-search${PROD_SEARCH?' has-value':''}" id="pro-search-wrap"><span>⌕</span>
-            <input type="search" id="pro-search" placeholder="Tìm freelancer…" autocomplete="off" value="${esc(PROD_SEARCH)}">
-            <button type="button" class="pro-search-clear" id="pro-search-clear" title="Xoá tìm kiếm">×</button></label>
-            <button class="pro-atan-open" id="atan-open">🧾 A Tân &amp; hoá đơn</button><div class="pro-cost-stats">
+        <div class="sec-head pro-main-head"><div class="badge">SX</div><h2>Chi phí sản xuất</h2>
+          <div class="pro-cost-stats">
             <button class="pro-cost-stat sort-stat" data-psort="cost" title="Sắp xếp theo Chi phí"><i>Chi phí</i><b id="pro-cost-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
             <button class="pro-cost-stat ot sort-stat" data-psort="ot" title="Sắp xếp theo OT"><i>OT</i><b id="pro-ot-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
             <button class="pro-cost-stat total sort-stat" data-psort="total" title="Sắp xếp theo Tổng chi phí"><i>Tổng CP</i><b id="pro-total-cost-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
-          </div><div class="pro-counts" id="pro-rowcount">
+          </div>
+        </div>
+        <div class="pro-toolbar-row">
+          <div class="right pro-table-controls"><label class="pro-search${PROD_SEARCH?' has-value':''}" id="pro-search-wrap"><span>⌕</span>
+            <input type="search" id="pro-search" placeholder="Tìm freelancer…" autocomplete="off" value="${esc(PROD_SEARCH)}">
+            <button type="button" class="pro-search-clear" id="pro-search-clear" title="Xoá tìm kiếm">×</button></label>
+            <button class="pro-atan-open" id="atan-open">🧾 A Tân &amp; hoá đơn</button><div class="pro-counts" id="pro-rowcount">
             <button class="pro-count active" data-pfilter="all"><b id="pro-count-all">0</b> khoản</button>
             <button class="pro-count paid" data-pfilter="paid"><b id="pro-count-paid">0</b> đã TT</button>
             <button class="pro-count unpaid" data-pfilter="unpaid"><b id="pro-count-unpaid">0</b> chưa TT</button>
-          </div><button class="pro-count pro-project-delete" id="pro-inline-del" title="Xoá dự án hiện tại">🗑 Xoá dự án</button></div></div>
+          </div><button class="pro-count pro-project-delete" id="pro-inline-del" title="Xoá dự án hiện tại">🗑 Xoá dự án</button></div>
+        </div>
         <div class="tablewrap pro-prod-scroll" id="pro-drop">
           <div class="dropveil" aria-live="polite"><span>↓ Thả file Excel (.xlsx) để nạp chi phí</span></div>
           <table class="prod-table">
