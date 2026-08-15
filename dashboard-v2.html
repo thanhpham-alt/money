@@ -4033,7 +4033,7 @@ const rowTong    = r => (+r.cp||0) + (+r.otTien||0);
 const rowPaid    = r => !!r.nguon && r.nguon !== 'chua_tra';   /* đã thanh toán */
 const rowConTra  = r => rowPaid(r) ? 0 : rowTong(r);
 const isProducer = r => r.loai === 'producer';
-const proReceived = p => (+p.receivedAmount||0) || (p.receivedDone ? (+p.contract||0) : 0);
+const proReceived = p => (+p.receivedAmount||0);
 function addToCashOnHand(delta){
   if(!delta) return;
   const el = $('v_h3');
@@ -4104,10 +4104,22 @@ function proCalc(p){
   const ctyConLai = advance - daTraCtyUng;         /* tiền cty đưa còn chưa xài · âm = cảnh báo */
   /* Công ty còn phải chuyển = giá trị hợp đồng trừ phần đã ứng (chưa trừ chi phí — chi phí trừ ở LN) */
   const ctyConNo  = p.contract - advance;
-  const loiRongThuVe = daTraTuUng + net;
-  const daThuVe = p.receivedDone ? proReceived(p) : 0;
-  /* Dự toán còn sẽ thu về: chỉ trừ khi đã xác nhận "Đã thu". */
-  const tienThuVe = loiRongThuVe - daThuVe;
+  /* Dự toán tiền thu về = tiền LN + tiền đã ứng - tiền thu đã xác nhận. */
+  const duToanThuVe = daTraTuUng + net;
+  const loiRongThuVe = duToanThuVe; /* alias cũ để phần code khác không vỡ */
+  let daThuVe = p.receivedDone ? proReceived(p) : 0;
+  /* Sửa dữ liệu cũ: bản trước từng auto điền nhầm tổng hợp đồng vào "Tiền đã thu". */
+  if(p.receivedDone && daThuVe > Math.max(0, duToanThuVe) && Math.abs(daThuVe - (+p.contract||0)) <= 1000){
+    const fixedReceived = Math.max(0, Math.round(duToanThuVe));
+    const oldPosted = +p.receivedCashPostedAmount||0;
+    p.receivedAmount = fixedReceived;
+    daThuVe = fixedReceived;
+    if(p.receivedCashPosted){
+      addToCashOnHand(fixedReceived - oldPosted);
+      p.receivedCashPostedAmount = fixedReceived;
+    }
+  }
+  const tienThuVe = duToanThuVe - daThuVe;
 
   /* alias cũ để phần code khác không vỡ */
   const spentReal = thucChi;
@@ -4115,7 +4127,7 @@ function proCalc(p){
   const daChiRa = daTraTuUng + daTraCtyUng;
   const tuiMinh = daTraTuUng;
   return {prodSum, otSum, atanOtSum, ungSum, thucChi, conTra, prodcSum, ctvSum, paidSum, nPaid,
-          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe, loiRongThuVe, daThuVe,
+          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe, duToanThuVe, loiRongThuVe, daThuVe,
           daChiRa, tuiMinh,
           fee, vat, atan, atanRate, atanTong, atanThuc,
           advance, advRate, spentReal, netAfterAdv,
@@ -5068,7 +5080,7 @@ function renderProDetail(){
         </div>
       </div>
       <div class="pk hero" id="pk-thuve">
-        <span>★ Dự toán tiền sẽ thu về <button class="ht-info" id="thuve-info" title="Xem chi tiết">ⓘ</button></span>
+        <span>★ Dự toán tiền thu về <button class="ht-info" id="thuve-info" title="Xem chi tiết">ⓘ</button></span>
         <b id="pro-thuve-l">—</b>
         <i id="thuve-break"></i>
       </div>
@@ -5320,13 +5332,15 @@ function renderProDetail(){
     p.advAuto = false; p.advance = goiY;
     $('pro-adv').value = nf.format(goiY); calc();
   });
-  /* ⓘ breakdown của "Dự toán tiền sẽ thu về" */
+  /* ⓘ breakdown của "Dự toán tiền thu về" */
   $('thuve-info').addEventListener('click', ()=>{
     const c = proCalc(p);
-    alert('DỰ TOÁN TIỀN SẼ THU VỀ\n\n'
-      + 'Dự toán ban đầu: ' + fmt(c.loiRongThuVe) + '\n'
-      + 'Đã xác nhận thu: ' + fmt(c.daThuVe) + '\n'
-      + 'Còn sẽ thu: ' + fmt(c.tienThuVe) + '\n\n'
+    alert('DỰ TOÁN TIỀN THU VỀ\n\n'
+      + 'LN ròng: ' + fmt(c.net) + '\n'
+      + 'Tiền đã ứng: ' + fmt(c.daTraTuUng) + '\n'
+      + 'Tiền thu: ' + fmt(c.daThuVe) + '\n'
+      + 'Dự toán còn lại: ' + fmt(c.tienThuVe) + '\n\n'
+      + 'Công thức: LN ròng + tiền đã ứng − tiền thu.\n'
       + 'Chỉ khi bấm "Đã thu" thì số đã thu mới trừ khỏi dự toán và cộng vào tiền mặt.\n\n'
       + 'Lãi ròng = Hợp đồng ' + fmt(p.contract) + '\n'
       + '  − CP sản xuất + OT ' + fmt(c.thucChi) + '\n'
@@ -5616,7 +5630,7 @@ function calc(){
     tv.textContent = fmt(c.tienThuVe);
     tv.className = 'sh-val ' + (c.tienThuVe >= 0 ? 'pos' : 'neg');
     $('thuve-break').textContent =
-      'Dự toán ' + fmtShort(c.loiRongThuVe) + ' ₫ − đã thu ' + fmtShort(c.daThuVe) + ' ₫';
+      'LN ' + fmtShort(c.net) + ' ₫ + đã ứng ' + fmtShort(c.daTraTuUng) + ' ₫ − thu ' + fmtShort(c.daThuVe) + ' ₫';
     /* công ty còn nợ + 2 cảnh báo (brief mục 5) */
     const ctyNoEl = $('pro-ctyno-l');
     ctyNoEl.textContent = fmt(c.ctyConNo);
