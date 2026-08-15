@@ -2136,8 +2136,8 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   .pd-table tbody td{display:table-cell!important;padding:7px!important}.pd-table tbody td::before{display:none!important}
 }
 
-/* ============ OVERVIEW V2 — Tổng tiền, tiền mặt, công nợ ============ */
-.ov-dashboard{display:grid;grid-template-columns:1.05fr .76fr 1.35fr;gap:10px;margin-bottom:10px;align-items:stretch}
+/* ============ OVERVIEW V2 — Tổng tiền và tiền mặt ============ */
+.ov-dashboard{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;margin-bottom:10px;align-items:stretch}
 .ov-card{min-width:0;margin:0;padding:13px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 .ov-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
 .ov-card-head>div{min-width:0}.ov-card-head small{display:block;color:var(--faint);font-size:8px;font-weight:750;
@@ -2164,28 +2164,9 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-cash-diff span{font-size:9px}.ov-cash-diff b{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
 .ov-cash-diff b.warn{color:var(--amber)}.ov-cash-diff b.ok{color:var(--green)}
 
-.ov-debt-card .ov-card-head{margin-bottom:7px}.ov-debt-card .ov-card-head h2{font-size:13px}
-.ov-debt-badge{margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-height:27px;padding:4px 8px;border-radius:8px;
-  background:var(--bg2);color:var(--sub);font-size:9px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
-.ov-debt-badge.clear{background:var(--green-soft);color:var(--green)}.ov-debt-badge.owed{background:var(--red-soft);color:var(--red)}
-.ov-debt-lines{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-.ov-debt-row{min-width:0;display:flex;align-items:center;justify-content:space-between;gap:7px;padding:6px 7px;border:1px solid var(--border2);
-  border-radius:8px;background:var(--bg2);color:var(--text);font:inherit;text-align:left;cursor:pointer;transition:.15s}
-.ov-debt-row:hover{border-color:var(--accent);background:var(--accent-soft)}
-.ov-debt-row span{min-width:0}.ov-debt-row span b,.ov-debt-row span small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ov-debt-row span b{font-size:9px}.ov-debt-row span small{margin-top:1px;color:var(--faint);font-size:7.5px}
-.ov-debt-row strong{font-size:9.5px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ov-debt-row.receivable strong{color:var(--green)}.ov-debt-row.payable strong{color:var(--red)}
-.ov-net-debt{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;padding:7px 8px;border-radius:8px;background:var(--accent-soft)}
-.ov-net-debt span{font-size:9.5px;font-weight:750;color:var(--sub)}.ov-net-debt b{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
-.ov-net-debt.clear{background:var(--green-soft)}.ov-net-debt.clear b{color:var(--green)}.ov-net-debt.owed{background:var(--red-soft)}.ov-net-debt.owed b{color:var(--red)}
-
-@media(max-width:1080px){
-  .ov-dashboard{grid-template-columns:1fr 1fr}.ov-debt-card{grid-column:1/-1}
-}
 @media(max-width:650px){
-  .ov-dashboard{grid-template-columns:1fr}.ov-debt-card{grid-column:auto}.ov-main-value{font-size:25px}
-  .ov-debt-lines{grid-template-columns:1fr}.ov-source-grid{grid-template-columns:1fr 1fr}
+  .ov-dashboard{grid-template-columns:1fr}.ov-main-value{font-size:25px}
+  .ov-source-grid{grid-template-columns:1fr 1fr}
 }
 
 /* ============ DỌN GIAO DIỆN: ẩn hết chú thích nhỏ ============ */
@@ -2381,17 +2362,6 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="ov-cash-diff"><span id="ov-cash-diff-label">Chênh lệch sổ sách</span><b id="ov-cash-diff">0 ₫</b></div>
     </section>
 
-    <section class="ov-card ov-debt-card">
-      <div class="ov-card-head"><span class="ov-card-icon">CN</span><div><small>Phải thu − phải trả</small><h2>Công nợ tổng hợp</h2></div>
-        <span class="ov-debt-badge" id="ov-debt-status">—</span></div>
-      <div class="ov-debt-lines">
-        <button type="button" class="ov-debt-row receivable" data-scroll="job-body"><span><b>Còn phải thu Job</b><small>Tổng quan</small></span><strong id="ov-job-owed">0 ₫</strong></button>
-        <button type="button" class="ov-debt-row payable" data-goto="pro"><span><b>Còn phải trả CTV</b><small>Production</small></span><strong id="ov-pro-due">0 ₫</strong></button>
-        <button type="button" class="ov-debt-row" data-goto="bluescope"><span><b>Ngân sách còn lại</b><small>Bluescope</small></span><strong id="ov-bs-left">0 ₫</strong></button>
-        <button type="button" class="ov-debt-row payable" data-open="debt-fold"><span><b>Nợ thẻ</b><small>Header hiện tại</small></span><strong id="ov-debt-total">0 ₫</strong></button>
-      </div>
-      <div class="ov-net-debt"><span>Tổng còn nợ ròng</span><b id="ov-net-debt">0 ₫</b></div>
-    </section>
   </div>
 
   <div class="modal" id="land-fold" hidden>
@@ -5427,10 +5397,10 @@ function calc(){
   $('debt-pill').textContent = fmtShort(totalDebt) + ' ₫';
 
   /* --- Pro --- */
-  let proContract=0, proProd=0, proFee=0, proNet=0, proThuVe=0, proTuUng=0, proConTra=0;
+  let proContract=0, proProd=0, proFee=0, proNet=0, proThuVe=0;
   S.pros.forEach(p=>{ const c=proCalc(p);
     proContract+=p.contract; proProd+=c.prodSum+c.otSum; proFee+=c.otherCost; proNet+=c.net;
-    proThuVe+=c.tienThuVe; proTuUng+=c.daTraTuUng; proConTra+=c.conTra; });
+    proThuVe+=c.tienThuVe; });
   set('pro-contract', proContract); set('pro-cost', proProd); set('pro-fee', proFee);
   set('pro-net', proNet, true);
 
@@ -5605,25 +5575,11 @@ function calc(){
   /* ---- Dashboard Tổng quan: gộp Job + Bluescope + Production ---- */
   const bsLeftPositive = Math.max(0, bsLeft);
   const totalIncome = proThuVe + sumBS + bsLeftPositive + sumPaid;
-  /* Dương = còn phải trả nhiều hơn phải thu. Ngân sách âm tự động làm tăng nghĩa vụ. */
-  const netDebt = totalDebt + proConTra - sumUnpaid - bsLeft;
   const cashDiff = totalIncome - vonNhapTay;
 
   set('ov-total-income', totalIncome, true);
   set('ov-prod-income', proThuVe); set('ov-bs-booking', sumBS);
   set('ov-bs-left-add', bsLeftPositive); set('ov-job-paid', sumPaid);
-  set('ov-job-owed', sumUnpaid); set('ov-pro-due', proConTra);
-  set('ov-bs-left', bsLeft, true); set('ov-debt-total', totalDebt); set('ov-net-debt', netDebt, true);
-
-  const bsLeftOverview = $('ov-bs-left');
-  if(bsLeftOverview) bsLeftOverview.style.color = bsLeft >= 0 ? 'var(--green)' : 'var(--red)';
-  const debtBadge = $('ov-debt-status'), netDebtBox = debtBadge && debtBadge.closest('.ov-debt-card').querySelector('.ov-net-debt');
-  if(debtBadge){
-    const clear = netDebt <= 0;
-    debtBadge.textContent = clear ? '✅ Hết nợ' : '⚠ Còn nợ ' + fmtShort(netDebt) + ' ₫';
-    debtBadge.className = 'ov-debt-badge ' + (clear ? 'clear' : 'owed');
-    if(netDebtBox) netDebtBox.className = 'ov-net-debt ' + (clear ? 'clear' : 'owed');
-  }
   const cashDiffEl = $('ov-cash-diff'), cashDiffLabel = $('ov-cash-diff-label');
   if(cashDiffEl && cashDiffLabel){
     const matched = Math.abs(cashDiff) < 1;
