@@ -5996,6 +5996,8 @@ const ROUTES = {overview:'tong-quan', bluescope:'bluescope', pro:'production', b
 const TAB_OF = Object.fromEntries(Object.entries(ROUTES).map(([k,v])=>[v,k]));
 const TITLE  = {overview:'Tổng quan', bluescope:'Bluescope', pro:'Production', bspublic:'Bluescope Booking'};
 const PUBLIC_SLUGS = new Set(['public/bluescope','bluescope-public','public']);
+const CLEAN_PATH_OF = {overview:'/tong-quan', bluescope:'/bluescope', pro:'/production', bspublic:'/bluescope-public'};
+const TAB_OF_PATH = Object.fromEntries(Object.entries(CLEAN_PATH_OF).map(([k,v])=>[v.replace(/^\/+/, ''), k]));
 let IS_PUBLIC = false;
 let PUBLIC_META = { updatedAt: '', source: 'local' };
 
@@ -6101,23 +6103,34 @@ function showTab(name){
 function goTab(name){
   if(IS_PUBLIC && name !== 'bspublic') return; /* public: không nhảy sang admin */
   if(!ROUTES[name]) return;
-  const want = '#/' + ROUTES[name];
-  if(location.hash !== want) location.hash = want;
-  else { showTab(name); window.scrollTo({top:0,behavior:'smooth'}); }
+  const cleanPath = CLEAN_PATH_OF[name] || ('/#/' + ROUTES[name]);
+  if(location.pathname !== cleanPath || location.hash){
+    history.pushState({tab:name}, '', cleanPath + location.search);
+  }
+  showTab(name);
+  window.scrollTo({top:0,behavior:'smooth'});
 }
-function routeFromHash(){
-  const slug = (location.hash || '').replace(/^#\/?/, '');
+function routeFromLocation(){
+  const hashSlug = (location.hash || '').replace(/^#\/?/, '');
+  const pathSlug = location.pathname.replace(/^\/+|\/+$/g, '');
+  const slug = hashSlug || pathSlug;
   if(isPublicSlug(slug)){ showTab('bspublic'); return; }
   /* nếu đang public mà hash bị đổi lung tung → vẫn chặn admin khi vào từ entry public */
   if(sessionStorage.getItem('money2026_public_only') === '1' && !isPublicSlug(slug)){
-    location.hash = '#/' + ROUTES.bspublic;
+    history.replaceState({tab:'bspublic'}, '', CLEAN_PATH_OF.bspublic);
     showTab('bspublic');
     return;
   }
-  const name = TAB_OF[slug] || 'overview';
+  const name = TAB_OF[slug] || TAB_OF_PATH[slug] || 'overview';
+  const cleanPath = CLEAN_PATH_OF[name];
+  if(location.hash && cleanPath){
+    history.replaceState({tab:name}, '', cleanPath + location.search);
+  }
   showTab(name);
 }
-window.addEventListener('hashchange', ()=>{ routeFromHash(); window.scrollTo({top:0,behavior:'smooth'}); });
+function routeFromHash(){ routeFromLocation(); }
+window.addEventListener('hashchange', ()=>{ routeFromLocation(); window.scrollTo({top:0,behavior:'smooth'}); });
+window.addEventListener('popstate', ()=>{ routeFromLocation(); window.scrollTo({top:0,behavior:'smooth'}); });
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click', ()=> goTab(tab.dataset.tab));
 });
@@ -6472,7 +6485,7 @@ window.openDataRescue = openDataRescue;
   }
 
   /* public không nạp full seed admin; admin lần đầu nạp seed deploy */
-  const slug = (location.hash || '').replace(/^#\/?/, '');
+  const slug = (location.hash || '').replace(/^#\/?/, '') || location.pathname.replace(/^\/+|\/+$/g, '');
   const params = new URLSearchParams(location.search);
   if(params.get('public') === '1') sessionStorage.setItem('money2026_public_only', '1');
   else if(!isPublicSlug(slug)) sessionStorage.removeItem('money2026_public_only');
@@ -6480,7 +6493,7 @@ window.openDataRescue = openDataRescue;
   const publicOnly = sessionStorage.getItem('money2026_public_only') === '1';
 
   if(publicOnly || isPublicSlug(slug)){
-    if(publicOnly && !isPublicSlug(slug)) location.hash = '#/' + ROUTES.bspublic;
+    if(publicOnly && !isPublicSlug(slug)) history.replaceState({tab:'bspublic'}, '', CLEAN_PATH_OF.bspublic);
     if(publicOnly) await loadPublicData();
     showTab('bspublic');
     return;

@@ -7,8 +7,11 @@
   "rewrites": [
     { "source": "/", "destination": "/dashboard-v2.html" },
     { "source": "/admin", "destination": "/dashboard-v2.html" },
+    { "source": "/tong-quan", "destination": "/dashboard-v2.html" },
+    { "source": "/production", "destination": "/dashboard-v2.html" },
+    { "source": "/bluescope", "destination": "/dashboard-v2.html" },
     { "source": "/public", "destination": "/bluescope-public.html" },
-    { "source": "/bluescope", "destination": "/bluescope-public.html" }
+    { "source": "/bluescope-public", "destination": "/bluescope-public.html" }
   ],
   "headers": [
     {
