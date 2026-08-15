@@ -2136,8 +2136,8 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   .pd-table tbody td{display:table-cell!important;padding:7px!important}.pd-table tbody td::before{display:none!important}
 }
 
-/* ============ OVERVIEW V2 — Tổng tiền và tiền mặt ============ */
-.ov-dashboard{display:grid;grid-template-columns:1.2fr .8fr;gap:10px;margin-bottom:10px;align-items:stretch}
+/* ============ OVERVIEW V3 — Công nợ, nợ thẻ, vay Shinhan ============ */
+.ov-dashboard{display:grid;grid-template-columns:1.45fr .78fr .78fr;gap:10px;margin-bottom:10px;align-items:stretch}
 .ov-card{min-width:0;margin:0;padding:13px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 .ov-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
 .ov-card-head>div{min-width:0}.ov-card-head small{display:block;color:var(--faint);font-size:8px;font-weight:750;
@@ -2148,25 +2148,31 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-income-card .ov-card-icon{background:rgba(255,255,255,.16);color:#fff}.ov-income-card .ov-card-head small{color:rgba(255,255,255,.68)}
 .ov-income-card .ov-card-head h2{color:#fff}.ov-main-value{display:block;margin:2px 0 11px;font-size:28px;line-height:1;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff}
-.ov-source-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.ov-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
 .ov-source{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 7px;border:1px solid rgba(255,255,255,.17);
   border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font:inherit;text-align:left;cursor:pointer;transition:.15s}
 .ov-source:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35)}
 .ov-source span{font-size:8px;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .ov-source b{font-size:10.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-.ov-cash-card{display:flex;flex-direction:column}.ov-cash-input{display:block;margin-top:3px;padding:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:10px}
-.ov-cash-input span{display:block;margin-bottom:4px;color:var(--faint);font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.4px}
-.ov-cash-input input{width:100%;height:39px;border:1px solid var(--border);border-radius:8px;background:var(--input);color:var(--text);
-  padding:5px 9px;text-align:right;font:inherit;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
-.ov-cash-input input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);background:var(--card)}
-.ov-cash-diff{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:10px;color:var(--sub)}
-.ov-cash-diff span{font-size:9px}.ov-cash-diff b{font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.ov-cash-diff b.warn{color:var(--amber)}.ov-cash-diff b.ok{color:var(--green)}
+.ov-stat-card{display:flex;flex-direction:column;overflow:hidden}
+.ov-stat-value{display:block;margin:10px 0 6px;font-size:23px;line-height:1.08;font-weight:820;
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ov-stat-card small.ov-stat-note{display:block;margin-top:auto;color:var(--faint);font-size:8.5px;line-height:1.45}
+.ov-card-debt{background:linear-gradient(150deg,var(--card),var(--red-soft));border-color:color-mix(in srgb,var(--red) 22%,var(--border))}
+.ov-card-debt .ov-card-icon{background:var(--red-soft);color:var(--red)}.ov-card-debt .ov-stat-value{color:var(--red)}
+.ov-card-bank{background:linear-gradient(150deg,var(--card),var(--blue-soft));border-color:color-mix(in srgb,var(--blue) 22%,var(--border))}
+.ov-card-bank .ov-card-icon{background:var(--blue-soft);color:var(--blue)}.ov-card-bank .ov-stat-value{color:var(--blue)}
+.ov-bank-next{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border2)}
+.ov-bank-next span{font-size:8px;color:var(--faint)}.ov-bank-next b{font-size:9.5px;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+@media(max-width:1080px){
+  .ov-dashboard{grid-template-columns:1fr 1fr}.ov-income-card{grid-column:1/-1}
+}
 
 @media(max-width:650px){
   .ov-dashboard{grid-template-columns:1fr}.ov-main-value{font-size:25px}
-  .ov-source-grid{grid-template-columns:1fr 1fr}
+  .ov-income-card{grid-column:auto}.ov-source-grid{grid-template-columns:1fr}
 }
 
 /* ============ DỌN GIAO DIỆN: ẩn hết chú thích nhỏ ============ */
@@ -2343,26 +2349,34 @@ body.public-mode #panel-bs-public{display:none!important}
 
 <!-- ============ OVERVIEW ============ -->
 <div class="panel active" id="panel-overview">
-  <!-- Dashboard tổng hợp ba nguồn: Job / Bluescope / Production -->
-  <div id="hero-cards" class="ov-dashboard" aria-label="Dashboard tổng quan dòng tiền">
+  <!-- Dashboard công nợ và nghĩa vụ nợ -->
+  <div id="hero-cards" class="ov-dashboard" aria-label="Dashboard công nợ và các khoản nợ">
     <section class="ov-card ov-income-card">
-      <div class="ov-card-head"><span class="ov-card-icon">★</span><div><small>Tổng hợp hệ thống</small><h2>Tổng tiền thu về</h2></div></div>
-      <b class="ov-main-value" id="ov-total-income">0 ₫</b>
+      <div class="ov-card-head"><span class="ov-card-icon">CN</span><div><small>Tổng Production + Job/Linh tinh + Bluescope</small><h2>Công nợ</h2></div></div>
+      <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
       <div class="ov-source-grid">
-        <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-prod-income">0 ₫</b></button>
-        <button type="button" class="ov-source" data-goto="bluescope"><span>Booking Bluescope</span><b id="ov-bs-booking">0 ₫</b></button>
-        <button type="button" class="ov-source" data-goto="bluescope"><span>Dư ngân sách</span><b id="ov-bs-left-add">0 ₫</b></button>
-        <button type="button" class="ov-source" data-scroll="job-body"><span>Job đã thu</span><b id="ov-job-paid">0 ₫</b></button>
+        <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
+        <button type="button" class="ov-source" data-scroll="job-body"><span>Job / Linh tinh</span><b id="ov-receivable-job">0 ₫</b></button>
+        <button type="button" class="ov-source" data-goto="bluescope"><span>Bluescope</span><b id="ov-receivable-bs">0 ₫</b></button>
       </div>
     </section>
 
-    <section class="ov-card ov-cash-card">
-      <div class="ov-card-head"><span class="ov-card-icon">₫</span><div><small>Nhập tay</small><h2>Tiền mặt hiện có</h2></div></div>
-      <label class="ov-cash-input"><span>Số dư thực tế</span><input type="text" class="money" id="v_h3" value="37000000" inputmode="numeric"></label>
-      <div class="ov-cash-diff"><span id="ov-cash-diff-label">Chênh lệch sổ sách</span><b id="ov-cash-diff">0 ₫</b></div>
+    <section class="ov-card ov-stat-card ov-card-debt">
+      <div class="ov-card-head"><span class="ov-card-icon">💳</span><div><small>Nợ hiện tại</small><h2>Nợ thẻ</h2></div></div>
+      <b class="ov-stat-value" id="ov-card-debt">0 ₫</b>
+      <small class="ov-stat-note">Chỉ lấy các khoản trong bảng Nợ thẻ</small>
     </section>
 
+    <section class="ov-card ov-stat-card ov-card-bank">
+      <div class="ov-card-head"><span class="ov-card-icon">🏦</span><div><small>Home Equity Loan</small><h2>Nợ ngân hàng · Shinhan</h2></div></div>
+      <b class="ov-stat-value" id="ov-bank-debt">0 ₫</b>
+      <small class="ov-stat-note">Giảm <b id="ov-bank-principal">0 ₫</b> vào ngày 10 mỗi tháng</small>
+      <div class="ov-bank-next"><span>Kỳ giảm tiếp theo</span><b id="ov-bank-next">—</b></div>
+    </section>
   </div>
+
+  <!-- Giữ dữ liệu tiền mặt lịch sử, không còn hiển thị trên dashboard mới. -->
+  <input type="text" class="money" id="v_h3" value="37000000" hidden>
 
   <div class="modal" id="land-fold" hidden>
    <div class="modal-box xwide">
@@ -2397,7 +2411,7 @@ body.public-mode #panel-bs-public{display:none!important}
         </div>
         <div class="land-flow-op" aria-hidden="true">−</div>
         <div class="land-flow-card loan">
-          <div class="land-flow-head"><span>Khoản vay còn</span><button class="land-loan-link" data-open="debt-fold">Xem lịch vay</button></div>
+          <div class="land-flow-head"><span>Dư nợ Shinhan</span><button class="land-loan-link" data-open="debt-fold">Xem chi tiết</button></div>
           <strong id="t_current_loan"></strong>
           <small class="land-loan-interest"><span>Lãi tháng này</span><b id="t_loan_interest"></b></small>
         </div>
@@ -2432,26 +2446,25 @@ body.public-mode #panel-bs-public{display:none!important}
       </div>
 
       <div class="section compact">
-        <div class="sec-head"><div class="badge">C</div><h2>Công nợ</h2>
+        <div class="sec-head"><div class="badge">C</div><h2>Nợ thẻ</h2>
           <div class="right"><span class="tag b" id="debt-count"></span></div></div>
     <div class="tablewrap">
       <table>
         <thead><tr><th class="stt">#</th><th>Ngân hàng</th><th class="num">Dư nợ</th>
           <th class="num">Trả tháng này</th><th class="num">Còn lại</th><th></th></tr></thead>
         <tbody id="debt-quick"></tbody>
-        <tbody id="debt-loan-interest"></tbody>
         <tbody id="debt-body"></tbody>
       </table>
     </div>
     <button class="addbtn" id="add-debt" hidden>+ Thêm khoản nợ</button>
-    <div class="total"><span>Tổng công nợ &amp; lãi tháng</span><b id="debt-total"></b></div>
+    <div class="total"><span>Tổng nợ thẻ</span><b id="debt-total"></b></div>
       </div>
     </div>
     <div hidden aria-hidden="true">
-      <input type="text" class="money" id="ln_bal" value="573611101">
+      <input type="text" class="money" id="ln_bal" value="570370360">
       <input type="text" class="money" id="ln_principal_monthly" value="3240741">
-      <input type="number" class="plain" id="ln_rate" min="0" step="0.1" value="10.5">
-      <input type="text" class="plain" id="ln_start_date" value="10/07/2026">
+      <input type="number" class="plain" id="ln_rate" min="0" step="0.1" value="10.2">
+      <input type="text" class="plain" id="ln_start_date" value="10/08/2026">
     </div>
    </div>
   </div>
@@ -2940,6 +2953,14 @@ if(!S.landLoanScheduleV1){
   if(S.inputs.land_sale_commission_rate == null || S.inputs.land_sale_commission_rate === '')
     S.inputs.land_sale_commission_rate = '2';
   S.landLoanScheduleV1 = true;
+}
+/* Chuẩn hoá theo sao kê Shinhan ngày 10/08/2026: dư nợ 570.370.360, gốc giảm 3.240.741/tháng. */
+if(!S.landLoanScheduleV2){
+  S.inputs.ln_bal = '570370360';
+  S.inputs.ln_principal_monthly = '3240741';
+  S.inputs.ln_rate = '10.2';
+  S.inputs.ln_start_date = '10/08/2026';
+  S.landLoanScheduleV2 = true;
 }
 
 /* Sửa dữ liệu hỏng do bản v1: migration cũ chỉ giữ được tổng tiền, mất Thời gian +
@@ -5285,17 +5306,12 @@ function landLoanState(){
   const remaining = Math.max(0, base - principalMonthly * elapsed);
   return {start, annualRate, base, principalMonthly, elapsed, remaining, monthlyRate:annualRate/1200};
 }
-function loanMonthLabel(date){
-  return String(date.getMonth()+1).padStart(2,'0') + '/' + date.getFullYear();
+function loanNextDue(state){
+  return new Date(state.start.getFullYear(), state.start.getMonth()+state.elapsed+1, state.start.getDate());
 }
-function renderLandLoanInterest(state){
-  const host = $('debt-loan-interest'); if(!host) return;
-  const due = new Date(state.start.getFullYear(), state.start.getMonth()+state.elapsed+1, state.start.getDate());
-  const interest = state.remaining * state.monthlyRate;
-  host.innerHTML = `<tr class="loan-interest-row"><td class="stt">↗</td>`+
-    `<td><b>Lãi vay đất</b><small class="small">${loanMonthLabel(due)} · tự tính theo dư nợ</small></td>`+
-    `<td class="num">—</td><td class="computed c-amber">${fmt(interest)}</td>`+
-    `<td class="computed c-amber">${fmt(interest)}</td><td></td></tr>`;
+function fullVnDate(date){
+  return String(date.getDate()).padStart(2,'0') + '/' +
+    String(date.getMonth()+1).padStart(2,'0') + '/' + date.getFullYear();
 }
 
 /* ================= main calc ================= */
@@ -5334,10 +5350,9 @@ function calc(){
   const totalDebt = nTri + nMom + nShop + sumDebt + loanInterest;
   set('n_f4', nMom); set('n_f5', nShop); set('n_f6', sumDebt);
   set('n_f7', totalDebt);
-  renderLandLoanInterest(landLoan);
 
   const jobChuaThu = S.jobs.filter(r=>!r[4]).reduce((t,r)=>t+((+r[2]||0)-(+r[3]||0)),0);
-  set('bs-total', sumBS); set('job-total', jobChuaThu); set('debt-total', sumDebt + loanInterest);
+  set('bs-total', sumBS); set('job-total', jobChuaThu); set('debt-total', sumDebt);
   set('bs-sum-dung', sumDung); set('bs-sum-discount', sumDiscount); set('bs-sum-total', sumBS);
   set('bs-sum-cost', sumChiho); set('bs-sum-remain', sumBS - sumChiho);
   if($('bs-sum-remain')){
@@ -5394,15 +5409,13 @@ function calc(){
   $('debt-meta').innerHTML =
     `<b>${S.debts.length}</b> khoản thẻ · dư nợ <b>${fmtShort(debtGross)} ₫</b>` +
     ` · trả tháng này <b class="c-amber">${fmtShort(debtPaid)} ₫</b>` +
-    ` · lãi vay tháng <b class="c-amber">${fmtShort(loanInterest)} ₫</b>` +
-    ` · tổng công nợ <b class="${totalDebt>0?'c-red':'c-green'}">${fmt(totalDebt)}</b>`;
-  $('debt-pill').textContent = fmtShort(totalDebt) + ' ₫';
+    ` · còn lại <b class="${sumDebt>0?'c-red':'c-green'}">${fmt(sumDebt)}</b>`;
+  $('debt-pill').textContent = fmtShort(sumDebt) + ' ₫';
 
   /* --- Pro --- */
-  let proContract=0, proProd=0, proFee=0, proNet=0, proThuVe=0;
+  let proContract=0, proProd=0, proFee=0, proNet=0;
   S.pros.forEach(p=>{ const c=proCalc(p);
-    proContract+=p.contract; proProd+=c.prodSum+c.otSum; proFee+=c.otherCost; proNet+=c.net;
-    proThuVe+=c.tienThuVe; });
+    proContract+=p.contract; proProd+=c.prodSum+c.otSum; proFee+=c.otherCost; proNet+=c.net; });
   set('pro-contract', proContract); set('pro-cost', proProd); set('pro-fee', proFee);
   set('pro-net', proNet, true);
 
@@ -5574,21 +5587,17 @@ function calc(){
   const grand = land1 + netWorth + land2 + bonus;
 
   const assets = bonus + land2 + land1;
-  /* ---- Dashboard Tổng quan: gộp Job + Bluescope + Production ---- */
-  const bsLeftPositive = Math.max(0, bsLeft);
-  const totalIncome = proThuVe + sumBS + bsLeftPositive + sumPaid;
-  const cashDiff = totalIncome - vonNhapTay;
-
-  set('ov-total-income', totalIncome, true);
-  set('ov-prod-income', proThuVe); set('ov-bs-booking', sumBS);
-  set('ov-bs-left-add', bsLeftPositive); set('ov-job-paid', sumPaid);
-  const cashDiffEl = $('ov-cash-diff'), cashDiffLabel = $('ov-cash-diff-label');
-  if(cashDiffEl && cashDiffLabel){
-    const matched = Math.abs(cashDiff) < 1;
-    cashDiffEl.textContent = matched ? '0 ₫' : fmt(Math.abs(cashDiff));
-    cashDiffEl.className = matched ? 'ok' : 'warn';
-    cashDiffLabel.textContent = matched ? 'Khớp sổ sách' : cashDiff > 0 ? 'Sổ sách cao hơn tiền mặt' : 'Tiền mặt cao hơn sổ sách';
-  }
+  /* ---- Dashboard Tổng quan V3 ----
+     Công nợ = tổng giá trị Production + Job/Linh tinh + Booking Bluescope. */
+  const receivableTotal = proContract + jobTotal + sumBS;
+  set('ov-receivable-total', receivableTotal, true);
+  set('ov-receivable-pro', proContract);
+  set('ov-receivable-job', jobTotal);
+  set('ov-receivable-bs', sumBS);
+  set('ov-card-debt', sumDebt);
+  set('ov-bank-debt', loanOutstanding);
+  set('ov-bank-principal', landLoan.principalMonthly);
+  $('ov-bank-next').textContent = fullVnDate(loanNextDue(landLoan));
 
   save();
 }
