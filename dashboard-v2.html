@@ -916,29 +916,15 @@ tr:hover .rowdel{opacity:1;pointer-events:auto}
   cursor:pointer;white-space:nowrap;transition:.15s}
 .pro-atan-open:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .pro-table-controls{display:flex;gap:5px!important;flex-wrap:nowrap;justify-content:flex-end;align-items:stretch}
-.pro-table-controls .pro-counts,.pro-table-controls .pro-cost-stats{gap:3px;padding-left:5px;border-left:1px solid var(--border2)}
-.pro-table-controls .pro-atan-open,.pro-table-controls .pro-count,.pro-table-controls .pro-cost-stat,
+.pro-table-controls .pro-counts{gap:3px;padding-left:5px;border-left:1px solid var(--border2)}
+.pro-table-controls .pro-atan-open,.pro-table-controls .pro-count,
 .pro-table-controls .pro-project-delete{height:29px;box-sizing:border-box;
   border-radius:7px;padding:0 8px;font-size:10px;align-items:center}
 .pro-table-controls .pro-count b{font-size:11px}
-.pro-cost-stats{display:grid;grid-template-columns:150px 130px 150px;align-items:center;gap:4px}
-.pro-cost-stat{display:flex;justify-content:space-between;gap:5px;border:1px solid var(--border);background:var(--bg2);color:var(--sub);white-space:nowrap;min-width:0}
-.pro-cost-stat.sort-stat{font-family:inherit;cursor:pointer;text-align:left}
-.pro-cost-stat.sort-stat:hover,.pro-cost-stat.sort-stat.sorted{border-color:var(--accent);background:var(--accent-soft)}
-.pro-cost-stat .pro-sort-arrow{font-size:10px;color:var(--faint);opacity:.55}
-.pro-cost-stat.sort-stat.sorted .pro-sort-arrow{color:var(--accent);opacity:1}
-.pro-cost-stat i{font-style:normal;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.2px;color:var(--faint)}
-.pro-cost-stat b{font-size:11px;font-variant-numeric:tabular-nums;color:var(--text);margin-left:auto;text-align:right;min-width:58px}
-.pro-cost-stat.ot b{color:var(--amber)}
-.pro-table-controls .pro-cost-stat.total{margin-top:0;background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 26%,var(--border))}
-.pro-cost-stat.total b{color:var(--accent)}
 .pro-table-controls .pro-project-delete{display:flex;margin-left:1px;white-space:nowrap}
 @media(max-width:1180px){.pro-table-controls{flex-wrap:wrap}.pro-table-controls .pro-counts{border-left:0;padding-left:0}}
 #panel-pro .pro-main-head{
   margin-bottom:6px;align-items:center;gap:8px;flex-wrap:wrap
-}
-#panel-pro .pro-main-head .pro-cost-stats{
-  margin-left:auto
 }
 #panel-pro .pro-toolbar-row{
   display:flex;justify-content:flex-end;margin:0 0 8px
@@ -5376,13 +5362,7 @@ function renderProDetail(){
 
     <div class="pro-grid">
       <div class="section compact-pad">
-        <div class="sec-head pro-main-head"><div class="badge">SX</div><h2>Chi phí sản xuất</h2>
-          <div class="pro-cost-stats">
-            <button class="pro-cost-stat sort-stat" data-psort="cost" title="Sắp xếp theo Chi phí"><i>Chi phí</i><b id="pro-cost-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
-            <button class="pro-cost-stat ot sort-stat" data-psort="ot" title="Sắp xếp theo OT"><i>OT</i><b id="pro-ot-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
-            <button class="pro-cost-stat total sort-stat" data-psort="total" title="Sắp xếp theo Tổng chi phí"><i>Tổng CP</i><b id="pro-total-cost-stat">—</b><span class="pro-sort-arrow">⇅</span></button>
-          </div>
-        </div>
+        <div class="sec-head pro-main-head"><div class="badge">SX</div><h2>Chi phí sản xuất</h2></div>
         <div class="pro-toolbar-row">
           <div class="right pro-table-controls"><label class="pro-search${PROD_SEARCH?' has-value':''}" id="pro-search-wrap"><span>⌕</span>
             <input type="search" id="pro-search" placeholder="Tìm freelancer…" autocomplete="off" value="${esc(PROD_SEARCH)}">
