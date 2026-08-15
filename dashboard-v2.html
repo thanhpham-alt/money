@@ -1973,6 +1973,14 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 #panel-pro .pro-budget-field input{height:28px;font-size:11px;font-variant-numeric:tabular-nums}
 #panel-pro .pro-budget-field .atan-cell{grid-template-columns:minmax(0,1fr) 28px;gap:4px}
 #panel-pro .pro-budget-field .atan-lock{width:28px;height:28px}
+#panel-pro .pro-budget-field .pro-received-cell{grid-template-columns:minmax(0,1fr) 58px}
+#panel-pro .pro-budget-field .pro-received-cell .atan-lock{width:58px;font-size:10px;font-weight:750}
+#panel-pro .pro-budget-field .pro-received-toggle.on{
+  background:var(--green);border-color:var(--green);color:#fff
+}
+#panel-pro .pro-budget-field .pro-received-toggle:not(.on){
+  background:var(--bg2);color:var(--faint)
+}
 #panel-pro .pro-metric-grid{
   height:auto;grid-template-columns:1fr;gap:5px;align-items:stretch
 }
@@ -3973,6 +3981,8 @@ const prodRow = o => Object.assign({ten:'', note:'', cp:0, ot:false, otTien:0,
                                     ung:false, ungTien:0, qr:'', crewId:'',
                                     loai:'ctv', nguon:'chua_tra'}, o||{});
 function normalizeProd(p){
+  p.receivedAmount = +p.receivedAmount || 0;
+  p.receivedDone = !!p.receivedDone;
   p.prod = (p.prod||[]).map(r=>{
     if(Array.isArray(r))
       return prodRow(r.length>=3 ? {ten:r[0]||'', note:r[1]||'', cp:+r[2]||0}
@@ -3991,6 +4001,7 @@ const rowTong    = r => (+r.cp||0) + (+r.otTien||0);
 const rowPaid    = r => !!r.nguon && r.nguon !== 'chua_tra';   /* đã thanh toán */
 const rowConTra  = r => rowPaid(r) ? 0 : rowTong(r);
 const isProducer = r => r.loai === 'producer';
+const proReceived = p => (+p.receivedAmount||0) || (p.receivedDone ? (+p.contract||0) : 0);
 /* Dòng mẫu chỉ có tên hạng mục chưa tính là đã điền. Có tiền/người/QR/trạng thái mới nổi lên đầu. */
 const prodHasEntry = r => !!(
   (+r.cp||0) || (+r.otTien||0) || r.crewId || String(r.flText||'').trim() ||
@@ -4054,9 +4065,9 @@ function proCalc(p){
   const ctyConLai = advance - daTraCtyUng;         /* tiền cty đưa còn chưa xài · âm = cảnh báo */
   /* Công ty còn phải chuyển = giá trị hợp đồng trừ phần đã ứng (chưa trừ chi phí — chi phí trừ ở LN) */
   const ctyConNo  = p.contract - advance;
-  /* ★ Tiền tôi thu về = tiền mình đã tự bỏ túi ra (được hoàn lại)
-                        + lãi ròng sau khi trừ TẤT CẢ chi phí (sản xuất + OT + hoá đơn + A Tân) */
-  const tienThuVe = daTraTuUng + net;
+  /* Tiền đã thu về là số nhập tay theo từng dự án; nếu tick đã thu mà chưa nhập thì lấy tạm HĐ. */
+  const tienThuVe = proReceived(p);
+  const loiRongThuVe = daTraTuUng + net;
 
   /* alias cũ để phần code khác không vỡ */
   const spentReal = thucChi;
@@ -4064,7 +4075,7 @@ function proCalc(p){
   const daChiRa = daTraTuUng + daTraCtyUng;
   const tuiMinh = daTraTuUng;
   return {prodSum, otSum, atanOtSum, ungSum, thucChi, conTra, prodcSum, ctvSum, paidSum, nPaid,
-          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe,
+          daTraTuUng, daTraCtyUng, chiPhiKhac, advGoiY, ctyConLai, ctyConNo, tienThuVe, loiRongThuVe,
           daChiRa, tuiMinh,
           fee, vat, atan, atanRate, atanTong, atanThuc,
           advance, advRate, spentReal, netAfterAdv,
@@ -5017,7 +5028,7 @@ function renderProDetail(){
         </div>
       </div>
       <div class="pk hero" id="pk-thuve">
-        <span>★ Tiền tôi thu về <button class="ht-info" id="thuve-info" title="Xem cách tính">ⓘ</button></span>
+        <span>★ Tiền đã thu về <button class="ht-info" id="thuve-info" title="Xem chi tiết">ⓘ</button></span>
         <b id="pro-thuve-l">—</b>
         <i id="thuve-break"></i>
       </div>
@@ -5027,6 +5038,12 @@ function renderProDetail(){
         <div class="pro-budget-grid">
           <label class="pro-budget-field"><span>Tổng phí ký hợp đồng</span>
             <input type="text" class="money" id="pro-contract-in" value="${nf.format(p.contract)}"></label>
+          <label class="pro-budget-field"><span>Tiền đã thu</span>
+            <div class="atan-cell pro-received-cell">
+              <input type="text" class="money" id="pro-received" value="${nf.format(+p.receivedAmount||0)}" placeholder="0">
+              <button class="atan-lock pro-received-toggle ${p.receivedDone?'on':''}" id="pro-received-toggle"
+                      title="${p.receivedDone?'Đã thu đủ — bấm để bỏ tick':'Tick đã thu đủ'}">${p.receivedDone?'Đã thu':'Thu'}</button>
+            </div></label>
           <label class="pro-budget-field"><span>Công ty đã ứng</span>
             <div class="atan-cell">
               <input type="text" class="money" id="pro-adv" value="${nf.format(+p.advance||0)}" placeholder="0">
@@ -5215,6 +5232,16 @@ function renderProDetail(){
   $('pro-name').addEventListener('input', e=>{ p.name = e.target.value; renderProList(); save(); });
   $('pro-contract-in').addEventListener('input', e=>{ liveFormatMoney(e.target); p.contract = parseNum(e.target.value); calc(); });
   $('pro-contract-in').addEventListener('blur', e=>{ e.target.value = nf.format(p.contract); });
+  $('pro-received').addEventListener('input', e=>{ liveFormatMoney(e.target); p.receivedAmount = parseNum(e.target.value); calc(); });
+  $('pro-received').addEventListener('blur', e=>{ e.target.value = nf.format(+p.receivedAmount||0); });
+  $('pro-received-toggle').addEventListener('click', ()=>{
+    p.receivedDone = !p.receivedDone;
+    if(p.receivedDone && !(+p.receivedAmount||0)){
+      p.receivedAmount = +p.contract||0;
+      $('pro-received').value = nf.format(p.receivedAmount);
+    }
+    renderProDetail(); calc();
+  });
   $('pro-atan-budget').addEventListener('input', e=>{
     liveFormatMoney(e.target); p.atan = parseNum(e.target.value); calc();
   });
@@ -5232,14 +5259,13 @@ function renderProDetail(){
     p.advAuto = false; p.advance = goiY;
     $('pro-adv').value = nf.format(goiY); calc();
   });
-  /* ⓘ breakdown của "Tiền tôi thu về" */
+  /* ⓘ breakdown của "Tiền đã thu về" */
   $('thuve-info').addEventListener('click', ()=>{
     const c = proCalc(p);
-    alert('TIỀN TÔI THU VỀ = Tiền tôi đã ứng + Lãi ròng\n\n'
-      + '  Đã tự ứng (được hoàn lại)  ' + fmt(c.daTraTuUng) + '\n'
-      + '+ Lãi ròng                   ' + fmt(c.net) + '\n'
-      + '  ─────────────────────────\n'
-      + '= ' + fmt(c.tienThuVe) + '\n\n'
+    alert('TIỀN ĐÃ THU VỀ = số tiền nhập ở ô "Tiền đã thu"\n\n'
+      + 'Đã thu: ' + fmt(c.tienThuVe) + '\n'
+      + 'Trạng thái: ' + (p.receivedDone ? 'Đã thu đủ' : 'Đang tracking') + '\n\n'
+      + 'Tham khảo lợi nhuận:\n'
       + 'Lãi ròng = Hợp đồng ' + fmt(p.contract) + '\n'
       + '  − CP sản xuất + OT ' + fmt(c.thucChi) + '\n'
       + '  − Hoá đơn & A Tân  ' + fmt(c.chiPhiKhac) + '\n'
@@ -5300,6 +5326,7 @@ function saveNewPro(){
   const id = 'p'+Date.now();
   S.pros.push({ id, name: ten, client:'', contract: parseNum($('np-contract').value),
                 feeRate:4, vatRate:8, atan:0, atanRate:22, advance:0, advAuto:false, advRate:50,
+                receivedAmount:0, receivedDone:false,
                 prod: [] });
   S.activePro = id;
   closeNewPro();
@@ -5522,12 +5549,12 @@ function calc(){
     const bar = $('pro-margin-bar');
     bar.style.width = Math.max(0, Math.min(100, mgPct)) + '%';
     bar.style.background = c.net >= 0 ? 'var(--green)' : 'var(--red)';
-    /* ★ số hero: tiền Thanh thu về = đã tự ứng + phần cty còn nợ */
+    /* Số hero: tiền thật đã thu của dự án, nhập tay để dashboard không tự suy diễn. */
     const tv = $('pro-thuve-l');
     tv.textContent = fmt(c.tienThuVe);
     tv.className = 'sh-val ' + (c.tienThuVe >= 0 ? 'pos' : 'neg');
     $('thuve-break').textContent =
-      'Tự ứng ' + fmtShort(c.daTraTuUng) + ' ₫  +  LN ròng ' + fmtShort(c.net) + ' ₫';
+      (ap.receivedDone ? 'Đã thu đủ' : 'Đang tracking') + ' · HĐ ' + fmtShort(ap.contract) + ' ₫';
     /* công ty còn nợ + 2 cảnh báo (brief mục 5) */
     const ctyNoEl = $('pro-ctyno-l');
     ctyNoEl.textContent = fmt(c.ctyConNo);
