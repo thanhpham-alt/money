@@ -2471,7 +2471,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="tab t-pro" data-tab="pro"><i class="tab-ic">🎬</i>Production <span class="pill" id="pill-pro">0</span></div>
     </nav>
     <div class="head-actions">
-      <button class="iconbtn" id="open-bill" title="Upload bill chuyển khoản — Gemini đọc rồi trừ tiền hiện có">⬆ Bill</button>
+      <button class="iconbtn" id="open-bill" title="Upload bill — OCR đọc ngày, số tiền, nội dung rồi trừ tiền hiện có">⬆ Bill</button>
       <button class="iconbtn" id="open-land" title="Tất toán đất &amp; khoản vay hiện tại">🏡 Tất toán đất
         <span class="hd-meta" id="land-pill"></span></button>
       <button class="iconbtn" id="open-crew" title="Danh bạ freelancer">👥 Freelancer</button>
@@ -2683,7 +2683,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="job-chi-bar">
         <input type="file" id="job-chi-file" accept="image/*" multiple hidden>
         <button class="iconbtn" type="button" id="job-chi-upload">⬆ Upload bill</button>
-        <span class="hint">Gemini đọc ngày · số tiền · nội dung — bạn sửa rồi trừ Tiền hiện có</span>
+        <span class="hint">OCR đọc ngày · số tiền · nội dung — bạn sửa rồi trừ Tiền hiện có</span>
       </div>
       <div class="daily-status" id="job-chi-status">Chưa có khoản đã chi.</div>
       <div class="daily-list" id="job-chi-list" hidden></div>
@@ -2721,7 +2721,7 @@ body.public-mode #panel-bs-public{display:none!important}
     </div>
     <input type="file" id="bill-file" accept="image/*" multiple hidden>
     <div class="bill-grid">
-      <div class="bill-preview" id="bill-preview"><div class="ph">Chọn ảnh chuyển khoản<br>để Gemini đọc</div></div>
+      <div class="bill-preview" id="bill-preview"><div class="ph">Chọn ảnh chuyển khoản<br>OCR đọc ngày · số tiền · nội dung</div></div>
       <div class="bill-fields">
         <label>Ngày giao dịch
           <input type="date" id="bill-date">
@@ -6934,23 +6934,104 @@ function openBillTool(){
   if(!$('bill-date').value) $('bill-date').value = todayISO();
   paintBillCash();
 }
+function foldVie(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u00a0/g,' ');
+}
+function parseVndToken(s){
+  const digits = String(s||'').replace(/[^\d]/g,'');
+  if(!digits) return 0;
+  const n = Number(digits);
+  return (n >= 1000 && n < 1e12) ? n : 0;
+}
+function parseBankReceipt(raw){
+  const text = foldVie(raw);
+  const upper = text.toUpperCase();
+  let kind = 'expense';
+  if(/NHAN TIEN|TIEN VAO|DA NHAN|RECEIVED/.test(upper) && !/CHUYEN THANH CONG|CHUYEN TIEN|\bTOI\b/.test(upper))
+    kind = 'income';
+  if(/CHUYEN THANH CONG|CHUYEN TIEN|\bTOI\b|TRANSFER SUCCESS|DA CHUYEN/.test(upper))
+    kind = 'expense';
+
+  let amount = 0;
+  const amtPatterns = [
+    /(?:VND|VNĐ|D)\s*([0-9][0-9., ]{2,})/gi,
+    /([0-9]{1,3}(?:[.,][0-9]{3}){1,4})\s*(?:VND|VNĐ|D|Đ)?/gi
+  ];
+  for(const re of amtPatterns){
+    let m; while((m = re.exec(text))){
+      const n = parseVndToken(m[1]);
+      if(n > amount) amount = n;
+    }
+  }
+
+  let occurredAt = todayISO();
+  const dm = text.match(/(\d{1,2})\s*(?:thg|thang|\/|-)\s*(\d{1,2})[,/\-\s]+(\d{4})/i)
+          || text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if(dm){
+    const dd = String(dm[1]).padStart(2,'0');
+    const mm = String(dm[2]).padStart(2,'0');
+    occurredAt = dm[3] + '-' + mm + '-' + dd;
+  }
+
+  let bankRef = null;
+  const rm = upper.match(/\b(FT\d{8,}|\d{10,}|GD[A-Z0-9]{6,})\b/);
+  if(rm) bankRef = rm[1];
+
+  let bank = null;
+  if(/TECHCOMBANK|\bTCB\b/.test(upper)) bank = 'TCB';
+  else if(/VIETCOMBANK|NGOAI THUONG|\bVCB\b/.test(upper)) bank = 'VCB';
+  else if(/TPBANK|\bTPB\b/.test(upper)) bank = 'TPB';
+  else if(/\bMB\b|MBBANK/.test(upper)) bank = 'MB';
+  else if(/\bOCB\b/.test(upper)) bank = 'OCB';
+  else if(/\bSCB\b/.test(upper)) bank = 'SCB';
+  else if(/BIDV/.test(upper)) bank = 'BIDV';
+  else if(/\bACB\b/.test(upper)) bank = 'ACB';
+  else if(/MOMO/.test(upper)) bank = 'MOMO';
+
+  let person = '';
+  const pm = text.match(/(?:toi|to|den)\s+([A-Z][A-Z\s]{2,40})/i)
+          || raw.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ\s]{2,40})/i);
+  if(pm) person = pm[1].replace(/\s+/g,' ').trim();
+
+  let memo = '';
+  const mm2 = text.match(/loi nhan[:\s]+([^\n]{3,80})/i)
+           || raw.match(/Lời nhắn[:\s]+([^\n]{3,80})/i);
+  if(mm2) memo = mm2[1].replace(/\s+/g,' ').trim();
+
+  const description = [person, memo].filter(Boolean).join(' · ')
+    || (kind==='expense' ? 'Chuyển khoản' : 'Nhận tiền');
+
+  return { amount, description, occurredAt, bankRef, bank, kind, category:'khac', confidence: amount ? 0.7 : 0.2, raw: text };
+}
+let TESS_WORKER = null;
+async function loadTesseract(){
+  if(!window.Tesseract){
+    await new Promise((res, rej)=>{
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = res;
+      s.onerror = ()=> rej(new Error('Không tải được bộ OCR (Tesseract)'));
+      document.head.appendChild(s);
+    });
+  }
+  if(!TESS_WORKER){
+    TESS_WORKER = await window.Tesseract.createWorker('eng', 1);
+  }
+  return TESS_WORKER;
+}
 async function ocrOneBill(file){
-  const imageBase64 = await fileToBase64(file);
-  const ocrRes = await fetch('/api/daily-expenses/ocr', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/jpeg' })
-  });
-  const ocr = await ocrRes.json();
-  if(!ocrRes.ok) throw new Error(ocr.error || ocr.detail || 'OCR thất bại');
-  if(!ocr.kind) ocr.kind = 'expense';
-  return ocr;
+  const worker = await loadTesseract();
+  const { data } = await worker.recognize(file);
+  const parsed = parseBankReceipt(data && data.text || '');
+  if(!parsed.kind) parsed.kind = 'expense';
+  return parsed;
 }
 async function startBillQueue(files, statusEl, btn){
   const list = [...files].filter(f=>String(f.type||'').startsWith('image/'));
   if(!list.length){ alert('Chỉ chọn ảnh bill / chuyển khoản.'); return; }
   const label = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc bill…'; }
-  if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Gemini đang đọc ảnh…'; }
+  if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Đang OCR ảnh…'; }
   try{
     const first = list[0];
     const ocr = await ocrOneBill(first);
