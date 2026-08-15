@@ -28,6 +28,9 @@ const TABS = [
   { key: "packages", label: "Gói báo giá", icon: Layers },
 ] as const;
 
+const BLUESCOPE_PUBLIC_ORIGIN =
+  process.env.NEXT_PUBLIC_BLUESCOPE_PUBLIC_ORIGIN || "https://bluescope.thanhpham.fun";
+
 type TabKey = (typeof TABS)[number]["key"];
 
 export function BluescopeAdminView() {
@@ -45,7 +48,7 @@ export function BluescopeAdminView() {
   const { job, budget, rates, events, packages } = bs.data;
 
   function copyPublicLink() {
-    void navigator.clipboard.writeText(`${window.location.origin}/bluescope/public`);
+    void navigator.clipboard.writeText(BLUESCOPE_PUBLIC_ORIGIN);
     toast.success("Đã copy link public cho khách");
   }
 
@@ -88,7 +91,7 @@ export function BluescopeAdminView() {
             <Copy className="h-4 w-4" />
             Copy link
           </Button>
-          <Link href="/bluescope/public" target="_blank">
+          <Link href={BLUESCOPE_PUBLIC_ORIGIN} target="_blank">
             <Button type="button" variant="secondary" size="sm">
               <Eye className="h-4 w-4" />
               Xem như khách
