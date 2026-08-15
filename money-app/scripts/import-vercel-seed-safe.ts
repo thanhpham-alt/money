@@ -1,9 +1,15 @@
 import { PrismaClient } from "@prisma/client";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 const prisma = new PrismaClient();
 
+const DEFAULT_LOCAL_SEED = path.resolve(process.cwd(), "../money2026-seed.json");
 const SOURCE =
+  process.env.IMPORT_SEED_FILE ||
   process.env.IMPORT_SEED_URL ||
+  (existsSync(DEFAULT_LOCAL_SEED) ? DEFAULT_LOCAL_SEED : "") ||
   "https://money-git-main-thanhvideo65.vercel.app/money2026-seed.json";
 
 type LegacyJob = [string, string, number, number, boolean];
@@ -94,7 +100,40 @@ function jobCode(row: LegacyJob, index: number) {
   return known[name] || known[agency] || `JOB_${slug(label)}`;
 }
 
+function legacyRate(seed: LegacySeed, index: number) {
+  return seed.rate?.rows?.[index] || { half: 0, full: 0 };
+}
+
+function legacyBluescopeShootCost(seed: LegacySeed, e: NonNullable<LegacySeed["bluescope"]>[number]) {
+  const photo = Number(e.photo || 0);
+  const video = Number(e.video || 0);
+  const photoRate = legacyRate(seed, 0);
+  const videoRate = legacyRate(seed, 1);
+  if (e.time === "NỬA NGÀY") {
+    return Number(photoRate.half || 0) * photo + Number(videoRate.half || 0) * video;
+  }
+  return Number(photoRate.full || 0) * photo + Number(videoRate.full || 0) * video;
+}
+
+function legacyBluescopeEditCost(seed: LegacySeed, e: NonNullable<LegacySeed["bluescope"]>[number]) {
+  const recap = Number(e.recap || 0);
+  if (recap > 0) {
+    const editBase = legacyRate(seed, 2);
+    const shortClip = legacyRate(seed, 3);
+    return Number(editBase.half || 0) + recap * Number(shortClip.half || 0);
+  }
+  return Number(e.dung || 0);
+}
+
 async function loadSeed(): Promise<LegacySeed> {
+  if (!/^https?:\/\//i.test(SOURCE)) {
+    const raw = await readFile(SOURCE, "utf8");
+    const jsonText = raw.trim().startsWith("window.MONEY2026_SEED=")
+      ? raw.trim().replace(/^window\.MONEY2026_SEED=/, "").replace(/;?\s*$/, "")
+      : raw;
+    return JSON.parse(jsonText) as LegacySeed;
+  }
+
   const res = await fetch(SOURCE);
   if (!res.ok) throw new Error(`Không tải được seed: ${res.status} ${res.statusText}`);
   return (await res.json()) as LegacySeed;
@@ -177,7 +216,8 @@ async function mergeBluescope(seed: LegacySeed) {
       photographers: Number(e.photo || 0),
       videographers: Number(e.video || 0),
       recapClips: Number(e.recap || 0),
-      editCost: Number(e.dung || 0),
+      shootCost: legacyBluescopeShootCost(seed, e),
+      editCost: legacyBluescopeEditCost(seed, e),
       discount: Number(e.discount || 0),
       paidByUs: Number(e.chiho || 0),
       note: e.note || null,
