@@ -3983,6 +3983,8 @@ const prodRow = o => Object.assign({ten:'', note:'', cp:0, ot:false, otTien:0,
 function normalizeProd(p){
   p.receivedAmount = +p.receivedAmount || 0;
   p.receivedDone = !!p.receivedDone;
+  p.receivedCashPosted = !!p.receivedCashPosted;
+  p.receivedCashPostedAmount = +p.receivedCashPostedAmount || 0;
   p.prod = (p.prod||[]).map(r=>{
     if(Array.isArray(r))
       return prodRow(r.length>=3 ? {ten:r[0]||'', note:r[1]||'', cp:+r[2]||0}
@@ -4002,6 +4004,13 @@ const rowPaid    = r => !!r.nguon && r.nguon !== 'chua_tra';   /* đã thanh to�
 const rowConTra  = r => rowPaid(r) ? 0 : rowTong(r);
 const isProducer = r => r.loai === 'producer';
 const proReceived = p => (+p.receivedAmount||0) || (p.receivedDone ? (+p.contract||0) : 0);
+function addToCashOnHand(delta){
+  if(!delta) return;
+  const el = $('v_h3');
+  if(!el) return;
+  el.value = nf.format(money('v_h3') + delta);
+  if(S.inputs) S.inputs.v_h3 = el.value;
+}
 /* Dòng mẫu chỉ có tên hạng mục chưa tính là đã điền. Có tiền/người/QR/trạng thái mới nổi lên đầu. */
 const prodHasEntry = r => !!(
   (+r.cp||0) || (+r.otTien||0) || r.crewId || String(r.flText||'').trim() ||
@@ -5232,14 +5241,35 @@ function renderProDetail(){
   $('pro-name').addEventListener('input', e=>{ p.name = e.target.value; renderProList(); save(); });
   $('pro-contract-in').addEventListener('input', e=>{ liveFormatMoney(e.target); p.contract = parseNum(e.target.value); calc(); });
   $('pro-contract-in').addEventListener('blur', e=>{ e.target.value = nf.format(p.contract); });
-  $('pro-received').addEventListener('input', e=>{ liveFormatMoney(e.target); p.receivedAmount = parseNum(e.target.value); calc(); });
+  $('pro-received').addEventListener('input', e=>{
+    liveFormatMoney(e.target);
+    const next = parseNum(e.target.value);
+    if(p.receivedCashPosted){
+      const prevPosted = +p.receivedCashPostedAmount||0;
+      addToCashOnHand(next - prevPosted);
+      p.receivedCashPostedAmount = next;
+    }
+    p.receivedAmount = next;
+    calc();
+  });
   $('pro-received').addEventListener('blur', e=>{ e.target.value = nf.format(+p.receivedAmount||0); });
   $('pro-received-toggle').addEventListener('click', ()=>{
-    p.receivedDone = !p.receivedDone;
-    if(p.receivedDone && !(+p.receivedAmount||0)){
+    const turningOn = !p.receivedDone;
+    if(turningOn && !(+p.receivedAmount||0)){
       p.receivedAmount = +p.contract||0;
       $('pro-received').value = nf.format(p.receivedAmount);
     }
+    if(turningOn){
+      const amount = proReceived(p);
+      addToCashOnHand(amount - (+p.receivedCashPostedAmount||0));
+      p.receivedCashPosted = true;
+      p.receivedCashPostedAmount = amount;
+    }else{
+      addToCashOnHand(-(+p.receivedCashPostedAmount||0));
+      p.receivedCashPosted = false;
+      p.receivedCashPostedAmount = 0;
+    }
+    p.receivedDone = turningOn;
     renderProDetail(); calc();
   });
   $('pro-atan-budget').addEventListener('input', e=>{
@@ -5326,7 +5356,7 @@ function saveNewPro(){
   const id = 'p'+Date.now();
   S.pros.push({ id, name: ten, client:'', contract: parseNum($('np-contract').value),
                 feeRate:4, vatRate:8, atan:0, atanRate:22, advance:0, advAuto:false, advRate:50,
-                receivedAmount:0, receivedDone:false,
+                receivedAmount:0, receivedDone:false, receivedCashPosted:false, receivedCashPostedAmount:0,
                 prod: [] });
   S.activePro = id;
   closeNewPro();
@@ -5642,14 +5672,14 @@ function calc(){
   $('land-pill').textContent = fmtShort(takeHome) + ' ₫';
 
   /* --- Overview --- */
-  const vonNhapTay = money('v_h3');             /* tiền mặt đang cầm — nhập tay */
+  const vonNhapTay = money('v_h3');             /* tiền mặt đang cầm — gồm Production đã tick "Đã thu" */
   const sumPaid   = S.jobs.filter(r=>r[4]).reduce((s,r)=>s + ((+r[2]||0)-(+r[3]||0)), 0);
   const sumUnpaid = sumJob - sumPaid;
   /* Bluescope đã thanh toán cho freelancer bằng tiền mình → trừ ra khỏi tiền đang cầm */
   const bsDaTra   = S.bluescope.reduce((t,r)=>t+bsCostPaid(r), 0);
   /* Production: tiền mình đã tự ứng ra cho CTV (mọi dự án) */
   const proTuUngAll = S.pros.reduce((t,p2)=> t + proCalc(p2).daTraTuUng, 0);
-  /* ★ Hiện có = tiền nhập tay + Job đã thu − Bluescope đã trả − Production tự ứng */
+  /* Hiện có thực tế = tiền mặt hiện có + tiền thu đã post − các khoản đã trả. */
   const hienCo    = vonNhapTay + sumPaid - bsDaTra - proTuUngAll;
   const totalHave = hienCo + sumUnpaid + bsOwed - totalDebt;   /* Tổng có (khoá) */
   set('v_d3', totalDebt);
