@@ -2331,7 +2331,14 @@ body.public-mode #panel-bluescope.active{display:block!important}
 .bs-mini-tot i{font-style:normal;font-size:8.5px;font-weight:750;text-transform:uppercase;color:var(--faint);letter-spacing:.25px}
 .bs-mini-tot b{font-size:12px;font-weight:750;font-variant-numeric:tabular-nums}
 .bs-mini-tot.accent b{color:var(--green)}
-/* Public = layout y hệt admin, chỉ xem, ẩn CTV / Còn lại */
+/* Public Bluescope = chỉ còn bảng booking, không lộ phần quản trị / chi phí CTV / còn lại */
+body.public-mode .bs-overview-strip,
+body.public-mode .bs-budget-panel,
+body.public-mode .bs-rate-section,
+body.public-mode #bs-total,
+body.public-mode #bs-received,
+body.public-mode #bs-quay,
+body.public-mode #bs-dung,
 body.public-mode .bs-overview-strip .bs-kpi.ctv,
 body.public-mode .bs-overview-strip .bs-kpi.remain-kpi,
 body.public-mode .bs-table th:nth-child(12),
@@ -2345,9 +2352,15 @@ body.public-mode #bs-budget-add,
 body.public-mode #bs-budget-add-row,
 body.public-mode .bs-budget-del,
 body.public-mode .bs-commandbar{display:none!important}
-body.public-mode .bs-overview-strip .bs-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-body.public-mode .bs-overview-strip .bs-kpi:nth-child(4){grid-column:1}
-body.public-mode .bs-overview-strip .bs-kpi:nth-child(5){grid-column:2 / span 2}
+body.public-mode #panel-bluescope{max-width:100%!important}
+body.public-mode .bs-booking-section{margin-top:0}
+body.public-mode .bs-book-head{justify-content:space-between}
+body.public-mode .bs-book-head h2::after{
+  content:' · chỉ hiển thị booking';
+  color:var(--faint);
+  font-size:11px;
+  font-weight:600
+}
 body.public-mode .bs-table th:nth-child(11){width:120px}
 body.public-mode .bs-table{min-width:980px}
 /* Public: khóa hầu hết ô, chỉ cho sửa C.khấu (chiết khấu) */
