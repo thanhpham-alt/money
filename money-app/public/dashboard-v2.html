@@ -3148,7 +3148,7 @@ const DEFAULT = {
     ["SCB",8610000,6903000],["Tiền cố định (tiền nhà + sinh hoạt)",0,8000000]
   ],
   pros:[
-    { id:'p1', name:'7.8 LG shooting', client:'LG', contract:113000000, feeRate:4, vatRate:8, atan:15000000,
+    { id:'p1', name:'7.8 LG shooting', client:'LG', contract:113000000, feeRate:4, vatRate:8, atan:16000000,
       prod:[
         {ten:'TRƯƠNG MINH',note:'',cp:4000000,ot:false,otTien:0,ung:false,ungTien:0,crewId:'c1786159209890b8xm',loai:'ctv',paid:false},
         {ten:'Thịnh',note:'',cp:3000000,ot:false,otTien:0,ung:false,ungTien:0,crewId:'c1786200277298sf4n',loai:'ctv',paid:false},
@@ -3427,7 +3427,7 @@ if(!S.prodLgRestoreV2 && isEmptyProdTemplate(S) && DEFAULT.pros && DEFAULT.pros.
   S.crew = JSON.parse(JSON.stringify(DEFAULT.crew||[]));
   S.activePro = S.pros[0].id;
   S.pros.forEach(p=>{
-    if(/LG/i.test(p.name||'')){ p.atan = 15000000; p.atanAuto = false; }
+    if(/LG/i.test(p.name||'')){ p.atan = 16000000; p.atanAuto = false; }
   });
   S.prodLgRestoreV2 = true;
 }
@@ -3490,7 +3490,8 @@ async function pullStateFromServer(){
     const serverScore = stateScore(data);
     const serverHasCrew = (data.crew||[]).some(c=>String(c.ten||'').trim());
     const localEmpty = isEmptyProdTemplate(S);
-    if(localEmpty && serverHasCrew){
+    const serverIsLg = (data.pros||[]).some(p=>/LG/i.test(p.name||''));
+    if((localEmpty && serverHasCrew) || (serverIsLg && serverHasCrew && localEmpty)){
       localStorage.setItem(LS_KEY, JSON.stringify(data));
       localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(data));
       return 'reload';
