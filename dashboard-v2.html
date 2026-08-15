@@ -3651,7 +3651,9 @@ function saveJobQuick(){
   if(!JQ.ten && !JQ.tong){ $('jq-ten').focus(); $('jq-ten').placeholder = 'Nhập tên job trước…'; return; }
   rememberJobAccount(JQ.account);
   if(JQ.agency && !S.jobAgencies.some(x=>jobNameKey(x)===jobNameKey(JQ.agency))) S.jobAgencies.push(JQ.agency);
-  S.jobs.push([JQ.ten, JQ.agency, JQ.tong, JQ.cp, JQ.thu, JQ.date || todayISO(), JQ.account||'']);
+  /* Job vừa nhập luôn đứng đầu; bỏ sort cũ để không bị đẩy xuống lại ngay sau khi lưu. */
+  S.jobs.unshift([JQ.ten, JQ.agency, JQ.tong, JQ.cp, JQ.thu, JQ.date || todayISO(), JQ.account||'']);
+  JSORT = {col:-1, dir:1};
   JQ = {ten:'', agency:'', account:'', tong:0, cp:0, thu:false, date:todayISO()};
   renderJobs(); calc(); $('jq-ten').focus();
 }
@@ -5241,7 +5243,7 @@ $('add-bs').addEventListener('click', ()=>{
   const last = $('bs-body').querySelector('tr:last-child input');
   if(last) last.focus();
 });
-$('add-job').addEventListener('click', ()=>{ S.jobs.push(["","",0,0,false,todayISO(),""]); renderJobs(); calc(); });
+$('add-job').addEventListener('click', ()=>{ S.jobs.unshift(["","",0,0,false,todayISO(),""]); JSORT={col:-1,dir:1}; renderJobs(); calc(); });
 $('add-debt').addEventListener('click', ()=>{ S.debts.push(["",0,0]); renderDebts(); calc(); });
 
 /* ================= date helper ================= */
