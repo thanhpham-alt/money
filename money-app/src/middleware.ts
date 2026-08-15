@@ -22,14 +22,18 @@ export function middleware(request: NextRequest) {
 
   // Bluescope domain: rewrite tất cả về /bluescope/public
   if (host.startsWith("bluescope.")) {
-    if (pathname === "/bluescope/public") return NextResponse.next();
-    const url = request.nextUrl.clone();
-    url.pathname = "/bluescope/public";
-    return NextResponse.rewrite(url);
+    const res =
+      pathname === "/bluescope/public"
+        ? NextResponse.next()
+        : NextResponse.rewrite(new URL("/bluescope/public", request.url));
+    res.headers.set("Cache-Control", "no-store, must-revalidate");
+    return res;
   }
 
   // Mọi domain khác: full app, không rewrite
-  return NextResponse.next();
+  const res = NextResponse.next();
+  res.headers.set("Cache-Control", "no-store, must-revalidate");
+  return res;
 }
 
 export const config = {
