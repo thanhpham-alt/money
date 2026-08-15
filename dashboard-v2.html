@@ -2103,7 +2103,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 /* Nút trạng thái: chưa trả = số tiền · đã trả = chỉ "Đã thanh toán" */
 .pro-pay-status{
   width:100%;max-width:100%;min-height:34px;height:34px;box-sizing:border-box;
-  display:flex;align-items:center;justify-content:center;gap:6px;
+  display:flex;align-items:center;justify-content:center;gap:0;
   border:1px solid var(--border);border-radius:8px;background:var(--bg2);padding:3px 8px;
   color:var(--sub);font:inherit;cursor:pointer;overflow:hidden
 }
@@ -2120,7 +2120,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   background:var(--green-soft);color:var(--green)
 }
 .pro-pay-status.paid span{color:var(--green)}
-.pro-pay-status.unpaid{justify-content:space-between;border-color:color-mix(in srgb,var(--accent) 36%,var(--border));
+.pro-pay-status.unpaid{justify-content:center;border-color:color-mix(in srgb,var(--accent) 36%,var(--border));
   background:var(--accent-soft);color:var(--accent)}
 .pro-pay-status.unpaid span{color:var(--accent)}
 .pro-pay-status.quick{opacity:.55;cursor:not-allowed;justify-content:center}
@@ -2131,7 +2131,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .prod-total-row td{border-top:2px solid var(--border)!important;border-bottom:0!important;background:var(--bg2)!important;padding-top:8px!important;padding-bottom:8px!important}
 .prod-total-label{display:flex;align-items:baseline;gap:7px}.prod-total-label b{font-size:11.5px}.prod-total-label small{color:var(--faint);font-size:9.5px}
 .prod-total-value{text-align:right;font-size:11.5px;font-weight:800;white-space:nowrap}
-.prod-total-value.ot{color:var(--amber)}.prod-total-value.due{color:var(--accent)}
+.prod-total-value.ot{color:var(--amber)}.prod-total-value.due,.prod-total-value.pay-total{color:var(--accent)}
 .pd-table .pro-pay-status{max-width:148px;margin-left:auto}
 
 
@@ -4572,7 +4572,7 @@ function renderPdStrip(p){
               data-i="${i}" data-k="otTien" value="${(+r.otTien)?nf.format(+r.otTien):''}" placeholder="0"></td>
         <td><span class="pro-due-amount ${rowPaid(r)?'paid':''}">${fmt(rowConTra(r))}</span></td>
         <td><button class="pro-pay-status ${rowPaid(r)?'paid':'unpaid'}" data-paid="${i}">
-          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span>${rowPaid(r)?'':`<b>${fmt(rowConTra(r))}</b>`}</button></td>
+          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span></button></td>
         <td><input class="plain note" data-i="${i}" data-k="note" value="${esc(r.note)}" placeholder="—"></td>
         <td style="width:34px"><button class="rowbtn" data-del="${i}">✕</button></td>
       </tr>`).join('')
@@ -4680,7 +4680,7 @@ function renderProd(p){
       <td class="pro-status-cell" data-label="Thanh toán"><button class="pro-pay-status ${rowPaid(r)?'paid':'unpaid'}" data-paid="${i}"
             aria-pressed="${rowPaid(r)?'true':'false'}"
             title="${rowPaid(r)?'Đã thanh toán — bấm để chuyển về chưa trả':'Chưa thanh toán — bấm để đánh dấu đã trả'}">
-          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span>${rowPaid(r)?'':`<b>${fmt(rowConTra(r))}</b>`}
+          <span>${rowPaid(r)?'✓ Đã trả':'Thanh toán'}</span>
         </button></td>
 
       <td class="mid" data-label="QR"><div class="qr-cell" data-qrcell="${i}">
@@ -5392,7 +5392,7 @@ function renderProDetail(){
               <td class="prod-total-value" id="pro-foot-cost">0 ₫</td>
               <td class="prod-total-value ot" id="pro-foot-ot">0 ₫</td>
               <td class="prod-total-value due" id="pro-foot-due">0 ₫</td>
-              <td></td>
+              <td class="prod-total-value pay-total" id="pro-foot-pay">0 ₫</td>
               <td></td>
             </tr></tbody>
             <tbody id="pro-prod-body"></tbody>
@@ -5804,7 +5804,7 @@ function calc(){
     set('pro-tuung-l', c.daTraTuUng); set('pro-ctyung-l', c.daTraCtyUng);
     set('pro-thuchi-l', c.thucChi);
     set('pro-cost-stat', c.prodSum); set('pro-ot-stat', c.otSum); set('pro-total-cost-stat', c.thucChi);
-    set('pro-foot-cost', c.prodSum); set('pro-foot-ot', c.otSum); set('pro-foot-due', c.conTra);
+    set('pro-foot-cost', c.prodSum); set('pro-foot-ot', c.otSum); set('pro-foot-due', c.conTra); set('pro-foot-pay', c.thucChi);
     if($('pro-foot-count')) $('pro-foot-count').textContent = ap.prod.length + ' khoản';
     set('pro-ctyused-l', c.daTraCtyUng);
     set('pro-paidsum', c.paidSum); set('pro-ctvsum', c.ctvSum); set('pro-pdsum', c.prodcSum);
