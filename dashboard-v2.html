@@ -444,6 +444,23 @@ input.locked:focus{box-shadow:none;border-color:var(--border)}
 .job-chi-panel{margin-top:8px;border:1px solid var(--border);border-radius:12px;background:var(--card);overflow:hidden}
 .job-chi-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--border2);background:var(--bg2)}
 .job-chi-bar .hint{font-size:12px;color:var(--faint)}
+.bill-modal-box{width:min(720px,96vw)}
+.bill-grid{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
+.bill-preview{border:1px solid var(--border);border-radius:12px;background:var(--bg2);overflow:hidden;min-height:220px;display:grid;place-items:center}
+.bill-preview img{max-width:100%;max-height:320px;object-fit:contain;display:block}
+.bill-preview .ph{padding:20px;color:var(--faint);text-align:center;font-size:13px}
+.bill-fields{display:grid;gap:10px}
+.bill-fields label{display:grid;gap:4px;font-size:11px;font-weight:750;color:var(--faint);text-transform:uppercase;letter-spacing:.3px}
+.bill-fields input,.bill-fields select,.bill-fields textarea{
+  border:1px solid var(--border);border-radius:10px;background:var(--input);color:var(--text);
+  padding:9px 11px;font:inherit;font-size:14px;font-weight:650}
+.bill-fields textarea{min-height:72px;resize:vertical;text-transform:none;font-weight:500}
+.bill-cash{padding:10px 12px;border-radius:12px;background:var(--amber-soft);border:1px solid color-mix(in srgb,var(--amber) 30%,var(--border))}
+.bill-cash span{display:block;font-size:11px;font-weight:750;color:var(--faint);text-transform:uppercase}
+.bill-cash b{display:block;margin-top:4px;font-size:18px;font-variant-numeric:tabular-nums}
+.bill-cash.neg b{color:var(--red)}.bill-cash.pos b{color:var(--green)}
+.bill-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+@media(max-width:720px){.bill-grid{grid-template-columns:1fr}}
 .jt-sum{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 .job-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
 .job-table th.sortable:hover{color:var(--accent)}
@@ -2454,6 +2471,7 @@ body.public-mode #panel-bs-public{display:none!important}
       <div class="tab t-pro" data-tab="pro"><i class="tab-ic">🎬</i>Production <span class="pill" id="pill-pro">0</span></div>
     </nav>
     <div class="head-actions">
+      <button class="iconbtn" id="open-bill" title="Upload bill chuyển khoản — Gemini đọc rồi trừ tiền hiện có">⬆ Bill</button>
       <button class="iconbtn" id="open-land" title="Tất toán đất &amp; khoản vay hiện tại">🏡 Tất toán đất
         <span class="hd-meta" id="land-pill"></span></button>
       <button class="iconbtn" id="open-crew" title="Danh bạ freelancer">👥 Freelancer</button>
@@ -2664,8 +2682,8 @@ body.public-mode #panel-bs-public{display:none!important}
     <div class="job-chi-panel" id="job-chi-panel" hidden>
       <div class="job-chi-bar">
         <input type="file" id="job-chi-file" accept="image/*" multiple hidden>
-        <button class="iconbtn" type="button" id="job-chi-upload">⬆ Ảnh CK (Gemini)</button>
-        <span class="hint">Chọn ảnh chuyển khoản trên điện thoại — trừ ngay Tiền hiện có</span>
+        <button class="iconbtn" type="button" id="job-chi-upload">⬆ Upload bill</button>
+        <span class="hint">Gemini đọc ngày · số tiền · nội dung — bạn sửa rồi trừ Tiền hiện có</span>
       </div>
       <div class="daily-status" id="job-chi-status">Chưa có khoản đã chi.</div>
       <div class="daily-list" id="job-chi-list" hidden></div>
@@ -2691,6 +2709,47 @@ body.public-mode #panel-bs-public{display:none!important}
     <tbody id="job-paid-body" hidden></tbody>
 
     <!-- Tổng còn phải thu đã đưa lên dải KPI cùng hàng với Job / Đã thu. -->
+  </div>
+</div>
+
+<div class="modal" id="bill-fold" hidden>
+  <div class="modal-box bill-modal-box">
+    <div class="modal-head">
+      <div class="badge">B</div>
+      <h2>Nhập liệu từ bill</h2>
+      <button class="rowbtn" data-close>✕</button>
+    </div>
+    <input type="file" id="bill-file" accept="image/*" multiple hidden>
+    <div class="bill-grid">
+      <div class="bill-preview" id="bill-preview"><div class="ph">Chọn ảnh chuyển khoản<br>để Gemini đọc</div></div>
+      <div class="bill-fields">
+        <label>Ngày giao dịch
+          <input type="date" id="bill-date">
+        </label>
+        <label>Số tiền
+          <input type="text" class="money" id="bill-amount" placeholder="250.000">
+        </label>
+        <label>Nội dung
+          <textarea id="bill-desc" placeholder="TRAN THI KHUONG · Nhat Thanh chuyen khoan nhanh qua Zalo"></textarea>
+        </label>
+        <label>Loại
+          <select id="bill-kind">
+            <option value="expense">Đã chi — trừ tiền hiện có</option>
+            <option value="income">Đã thu — cộng tiền hiện có</option>
+          </select>
+        </label>
+        <div class="split2">
+          <label>Ngân hàng<input type="text" id="bill-bank" placeholder="TCB"></label>
+          <label>Mã GD<input type="text" id="bill-ref" placeholder="FT…"></label>
+        </div>
+        <div class="bill-cash" id="bill-cash"><span>Tiền hiện có sau khi ghi</span><b>—</b></div>
+      </div>
+    </div>
+    <div class="bill-actions">
+      <button class="iconbtn" type="button" id="bill-pick">Chọn ảnh</button>
+      <button class="iconbtn" type="button" data-close>Huỷ</button>
+      <button class="qa-save" type="button" id="bill-save">Ghi &amp; trừ tiền</button>
+    </div>
   </div>
 </div>
 
@@ -6372,10 +6431,11 @@ document.addEventListener('click', e=>{
 /* ---------- popup ở header: Góp vốn đất · Freelancer · Nợ thẻ ----------
    Chúng nằm trong các panel trong HTML cho dễ đọc, nhưng .modal là position:fixed
    nên phải chuyển ra ngoài body, không thì tab khác ẩn panel là popup cũng mất. */
-['land-fold','loan-fold','crew-modal','debt-fold'].forEach(id => document.body.appendChild($(id)));
+['land-fold','loan-fold','crew-modal','debt-fold','bill-fold'].forEach(id => document.body.appendChild($(id)));
 const openPop  = id => { const m = $(id); if(m) m.hidden = false; };
 const closePop = ()  => document.querySelectorAll('.modal[id$="-fold"], #crew-modal').forEach(m => m.hidden = true);
 $('open-land').addEventListener('click', ()=> openPop('land-fold'));
+if($('open-bill')) $('open-bill').addEventListener('click', ()=> openBillTool());
 $('open-crew').addEventListener('click', ()=>{ renderCrew(); $('crew-modal').hidden = false; });
 $('open-debt').addEventListener('click', ()=> openPop('debt-fold'));
 document.querySelectorAll('.modal[id$="-fold"]').forEach(m=>{
@@ -6830,68 +6890,131 @@ async function addDaily(payload){
   await loadDaily();
   return saved;
 }
-async function ocrBankImages(files, statusEl, btn){
+let BILL_QUEUE = [];
+let BILL_PREVIEW_URL = '';
+function billDraft(){
+  return {
+    occurredAt: ($('bill-date') && $('bill-date').value) || todayISO(),
+    amount: parseNum($('bill-amount') && $('bill-amount').value),
+    description: (($('bill-desc') && $('bill-desc').value) || '').trim(),
+    kind: ($('bill-kind') && $('bill-kind').value) || 'expense',
+    bank: (($('bill-bank') && $('bill-bank').value) || '').trim() || null,
+    bankRef: (($('bill-ref') && $('bill-ref').value) || '').trim() || null
+  };
+}
+function paintBillCash(){
+  const box = $('bill-cash'); if(!box) return;
+  const d = billDraft();
+  const now = money('v_h3');
+  const next = d.kind === 'income' ? now + d.amount : now - d.amount;
+  box.className = 'bill-cash ' + (d.kind === 'income' ? 'pos' : 'neg');
+  box.querySelector('span').textContent = d.kind === 'income'
+    ? 'Tiền hiện có sau khi cộng'
+    : 'Tiền hiện có sau khi trừ';
+  box.querySelector('b').textContent = fmt(next) + '   (' + (d.kind==='income'?'+':'−') + fmt(d.amount) + ')';
+  const saveBtn = $('bill-save');
+  if(saveBtn) saveBtn.textContent = d.kind === 'income' ? 'Ghi & cộng tiền' : 'Ghi & trừ tiền';
+}
+function fillBillForm(ocr, previewUrl){
+  if($('bill-date')) $('bill-date').value = (ocr.occurredAt || todayISO()).slice(0,10);
+  if($('bill-amount')) $('bill-amount').value = ocr.amount ? nf.format(+ocr.amount) : '';
+  if($('bill-desc')) $('bill-desc').value = ocr.description || '';
+  if($('bill-kind')) $('bill-kind').value = ocr.kind === 'income' ? 'income' : 'expense';
+  if($('bill-bank')) $('bill-bank').value = ocr.bank || '';
+  if($('bill-ref')) $('bill-ref').value = ocr.bankRef || '';
+  const prev = $('bill-preview');
+  if(prev){
+    if(previewUrl) prev.innerHTML = `<img src="${previewUrl}" alt="bill">`;
+    else prev.innerHTML = '<div class="ph">Không xem trước được ảnh</div>';
+  }
+  paintBillCash();
+}
+function openBillTool(){
+  openPop('bill-fold');
+  if(!$('bill-date').value) $('bill-date').value = todayISO();
+  paintBillCash();
+}
+async function ocrOneBill(file){
+  const imageBase64 = await fileToBase64(file);
+  const ocrRes = await fetch('/api/daily-expenses/ocr', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ imageBase64, mimeType: file.type || 'image/jpeg' })
+  });
+  const ocr = await ocrRes.json();
+  if(!ocrRes.ok) throw new Error(ocr.error || ocr.detail || 'OCR thất bại');
+  if(!ocr.kind) ocr.kind = 'expense';
+  return ocr;
+}
+async function startBillQueue(files, statusEl, btn){
   const list = [...files].filter(f=>String(f.type||'').startsWith('image/'));
-  if(!list.length){ alert('Chỉ upload ảnh chuyển khoản.'); return; }
+  if(!list.length){ alert('Chỉ chọn ảnh bill / chuyển khoản.'); return; }
   const label = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc bill…'; }
-  const done = [];
+  if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Gemini đang đọc ảnh…'; }
   try{
-    for(const f of list){
-      if(statusEl) statusEl.textContent = 'Gemini đang đọc ' + f.name + '…';
-      const imageBase64 = await fileToBase64(f);
-      const ocrRes = await fetch('/api/daily-expenses/ocr', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ imageBase64, mimeType: f.type || 'image/jpeg' })
-      });
-      const ocr = await ocrRes.json();
-      if(!ocrRes.ok) throw new Error(ocr.error || ocr.detail || 'OCR thất bại');
-      if(!ocr.kind) ocr.kind = 'expense';
-      const saved = await addDaily({ ...ocr, source:'ocr' });
-      done.push(saved);
-    }
-    const last = done[done.length-1];
-    const msg = last
-      ? `Đã ghi ${fmt(last.amount||0)} · ${last.description||'chuyển khoản'} — trừ Tiền hiện có`
-      : 'Xong';
-    if(statusEl){ statusEl.hidden = false; statusEl.textContent = msg; }
+    const first = list[0];
+    const ocr = await ocrOneBill(first);
+    if(BILL_PREVIEW_URL) URL.revokeObjectURL(BILL_PREVIEW_URL);
+    BILL_PREVIEW_URL = URL.createObjectURL(first);
+    BILL_QUEUE = list.slice(1);
+    fillBillForm(ocr, BILL_PREVIEW_URL);
+    openBillTool();
+    if(statusEl) statusEl.textContent = BILL_QUEUE.length
+      ? `Đã đọc 1 ảnh · còn ${BILL_QUEUE.length} ảnh chờ xác nhận`
+      : 'Kiểm tra ngày / số tiền / nội dung rồi bấm Ghi';
   }catch(err){
-    alert(err.message || 'OCR thất bại. Cần GEMINI_API_KEY trên Vercel.');
+    alert(err.message || 'Không đọc được bill.');
   }finally{
     if(btn){ btn.disabled = false; btn.textContent = label; }
   }
 }
-function bindDaily(){
-  const form = $('daily-form');
-  if(form){
-    if($('daily-date') && !$('daily-date').value) $('daily-date').value = todayISO();
-    form.addEventListener('submit', async e=>{
-      e.preventDefault();
-      const amount = parseNum($('daily-amount').value);
-      const description = ($('daily-desc').value||'').trim();
-      if(!amount || !description){ $('daily-desc').focus(); return; }
-      try{
-        await addDaily({
-          occurredAt: $('daily-date').value || todayISO(),
-          kind: $('daily-kind').value,
-          amount, description, source:'manual'
-        });
-        $('daily-amount').value = '';
-        $('daily-desc').value = '';
-      }catch(err){ alert('Không lưu được dòng hằng ngày.'); }
-    });
+async function saveBillDraft(){
+  const d = billDraft();
+  if(!d.amount){ $('bill-amount').focus(); return; }
+  if(!d.description){ $('bill-desc').focus(); return; }
+  const saved = await addDaily({ ...d, source:'ocr' });
+  const status = $('job-chi-status');
+  if(status){
+    status.hidden = false;
+    status.textContent = `Đã ghi ${fmt(saved.amount)} · ${saved.description} — ${saved.kind==='income'?'cộng':'trừ'} Tiền hiện có`;
   }
+  if(BILL_QUEUE.length){
+    const next = BILL_QUEUE.shift();
+    try{
+      const ocr = await ocrOneBill(next);
+      if(BILL_PREVIEW_URL) URL.revokeObjectURL(BILL_PREVIEW_URL);
+      BILL_PREVIEW_URL = URL.createObjectURL(next);
+      fillBillForm(ocr, BILL_PREVIEW_URL);
+    }catch(err){
+      alert(err.message || 'Ảnh tiếp theo đọc lỗi.');
+      closePop();
+    }
+    return;
+  }
+  closePop();
+}
+function bindDaily(){
+  ['bill-date','bill-amount','bill-kind'].forEach(id=>{
+    const el = $(id); if(!el) return;
+    el.addEventListener('input', ()=>{
+      if(id==='bill-amount') liveFormatMoney(el);
+      paintBillCash();
+    });
+    el.addEventListener('change', paintBillCash);
+  });
+  if($('bill-save')) $('bill-save').addEventListener('click', ()=> saveBillDraft().catch(e=>alert(e.message||'Không lưu được')));
+  if($('bill-pick')) $('bill-pick').addEventListener('click', ()=> $('bill-file').click());
   const bindPicker = (fileId, btnId, statusId)=>{
     const file = $(fileId), upload = $(btnId);
-    if(!upload || !file) return;
-    upload.addEventListener('click', ()=> file.click());
+    if(!file) return;
+    if(upload) upload.addEventListener('click', ()=> file.click());
     file.addEventListener('change', async ()=>{
       const files = [...(file.files||[])];
       file.value = '';
-      await ocrBankImages(files, $(statusId), upload);
+      await startBillQueue(files, $(statusId), upload);
     });
   };
-  bindPicker('daily-file', 'daily-upload', 'daily-status');
+  bindPicker('bill-file', 'bill-pick', 'job-chi-status');
   bindPicker('job-chi-file', 'job-chi-upload', 'job-chi-status');
   loadDaily();
 }
