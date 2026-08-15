@@ -282,3 +282,11 @@ model DailyExpense {
   @@index([occurredAt])
   @@index([kind])
 }
+
+/// Toàn bộ state dashboard-v2 (S) — 1 dòng, sync money + bluescope domain
+model DashboardState {
+  id        String   @id @default("default")
+  data      Json
+  revision  BigInt   @default(0)
+  updatedAt DateTime @updatedAt
+}

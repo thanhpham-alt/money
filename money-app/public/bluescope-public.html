@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bluescope Booking — lịch sự kiện</title>
+<meta name="robots" content="noindex">
+<script>
+/* Entry public: khóa chế độ chỉ-xem, không nav sang admin, rồi vào dashboard public route. */
+/* ?public=1 = khóa chỉ-xem (không nhảy sang admin). Entry này luôn gắn cờ. */
+var q = new URLSearchParams(location.search);
+q.set('public', '1');
+var target = 'dashboard-v2.html?' + q.toString() + '#/public/bluescope';
+location.replace(target);
+</script>
+</head>
+<body style="font-family:system-ui,sans-serif;padding:40px;color:#444;background:#f6f7f9">
+  <p>Đang mở <b>Bluescope Booking</b> (chỉ xem)…</p>
+  <p style="font-size:13px;color:#888">Nếu không chuyển trang, bấm
+    <a href="dashboard-v2.html#/public/bluescope">vào đây</a>.
+  </p>
+</body>
+</html>
