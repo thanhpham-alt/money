@@ -2047,9 +2047,9 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .pro-search.has-value .pro-search-clear{display:grid;place-items:center}
 .pro-search-clear:hover{background:var(--red-soft);color:var(--red)}
 
-/* Bảng production — full ngang, tách riêng Còn trả và Thanh toán */
+/* Bảng production — nhóm tiền đi liền nhau: Chi phí → OT → Còn trả → Thanh toán */
 #panel-pro .pro-prod-scroll{max-height:none;overflow-x:auto;overflow-y:visible}
-#panel-pro .prod-table{width:100%;min-width:1040px;table-layout:fixed}
+#panel-pro .prod-table{width:100%;min-width:1120px;table-layout:fixed}
 #panel-pro .prod-table th,#panel-pro .prod-table td{
   padding:7px 8px;box-sizing:border-box;overflow:hidden;vertical-align:middle
 }
@@ -2057,13 +2057,13 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 #panel-pro .prod-table tbody td{height:48px}
 /* # · Freelancer · Hạng mục · Chi phí · OT · Còn trả · Thanh toán · QR */
 #panel-pro .prod-table th:nth-child(1){width:48px}
-#panel-pro .prod-table th:nth-child(2){width:16%}
+#panel-pro .prod-table th:nth-child(2){width:15%}
 #panel-pro .prod-table th:nth-child(3){width:auto}
-#panel-pro .prod-table th:nth-child(4){width:150px}
-#panel-pro .prod-table th:nth-child(5){width:130px}
-#panel-pro .prod-table th:nth-child(6){width:135px}
-#panel-pro .prod-table th:nth-child(7){width:126px}
-#panel-pro .prod-table th:nth-child(8){width:90px}
+#panel-pro .prod-table th:nth-child(4){width:126px}
+#panel-pro .prod-table th:nth-child(5){width:112px}
+#panel-pro .prod-table th:nth-child(6){width:126px}
+#panel-pro .prod-table th:nth-child(7){width:116px}
+#panel-pro .prod-table th:nth-child(8){width:78px}
 #panel-pro .prod-table td.col-fl{overflow:hidden}
 #panel-pro .prod-table td.stt{text-align:center}
 #panel-pro .prod-table td.stt .rownum{
@@ -2071,6 +2071,17 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   font-variant-numeric:tabular-nums;font-weight:650;color:var(--sub);font-size:12px
 }
 #panel-pro .prod-table td.num{text-align:right}
+#panel-pro .prod-table th:nth-child(4),#panel-pro .prod-table td:nth-child(4),
+#panel-pro .prod-table th:nth-child(5),#panel-pro .prod-table td:nth-child(5),
+#panel-pro .prod-table th:nth-child(6),#panel-pro .prod-table td:nth-child(6),
+#panel-pro .prod-table th:nth-child(7),#panel-pro .prod-table td:nth-child(7){
+  background-clip:padding-box
+}
+#panel-pro .prod-table th:nth-child(4){border-left:2px solid color-mix(in srgb,var(--accent) 18%,var(--border2))}
+#panel-pro .prod-table tbody td:nth-child(4),
+#panel-pro .prod-table tfoot td:nth-child(2){border-left:2px solid color-mix(in srgb,var(--accent) 18%,var(--border2))!important}
+#panel-pro .prod-table td:nth-child(5),#panel-pro .prod-table td:nth-child(6),
+#panel-pro .prod-table td:nth-child(7){text-align:right}
 #panel-pro .prod-table tbody td{height:48px;min-height:48px;padding-top:6px;padding-bottom:6px}
 #panel-pro .prod-table td input.plain{width:100%;min-width:0;box-sizing:border-box}
 #panel-pro .prod-table input.money,
@@ -2084,7 +2095,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 }
 #panel-pro .prod-table tfoot .prod-total-value{text-align:right;padding-right:10px}
 /* QR gọn trong cột cuối — contain + nền trắng, bấm để xem to */
-#panel-pro .prod-table th:nth-child(8){width:90px}
+#panel-pro .prod-table th:nth-child(8){width:78px}
 #panel-pro .qr-cell{
   width:100%;min-width:0;min-height:0;height:auto;padding:0;
   justify-content:center;align-items:center;border-radius:0;background:transparent
@@ -2100,6 +2111,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   display:inline-flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:650;border-radius:8px
 }
+#panel-pro .prod-table .qa-save{height:32px;min-width:56px;padding:0 8px;font-size:11px;border-radius:8px}
 /* Nút trạng thái: chưa trả = số tiền · đã trả = chỉ "Đã thanh toán" */
 .pro-pay-status{
   width:100%;max-width:100%;min-height:34px;height:34px;box-sizing:border-box;
@@ -4364,7 +4376,7 @@ function renderQuickRow(p){
       <td class="mid" data-label="OT"><input class="plain num money cell-ot" id="qa-ot" placeholder="0" value="${g.ot?nf.format(g.ot):''}"></td>
       <td data-label="Còn trả"><span class="pro-due-amount" id="qa-due">${fmt((+g.cp||0)+(+g.ot||0))}</span></td>
       <td data-label="Thanh toán"><button class="pro-pay-status quick" disabled><span>Chưa lưu</span></button></td>
-      <td class="mid" data-label="Thao tác"><button class="qa-save" id="qa-save" title="Lưu (Enter)">Lưu</button></td>
+      <td class="mid" data-label="QR"><button class="qa-save" id="qa-save" title="Lưu (Enter)">Lưu</button></td>
     </tr>`;
 
   const get = id => $(id);
