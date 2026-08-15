@@ -4232,14 +4232,12 @@ function proCalc(p){
      Khoản này vẫn thuộc thucChi bên dưới, nên không cộng lại vào otherCost/net để tránh tính trùng. */
   const atanTong = vat + fee + atan + atanOtSum;
   const atanThuc = fee + atan + atanOtSum;
-  /* CP khác = phí xuất + A Tân (KHÔNG gồm VAT — giữ đúng số đã verify khớp Excel).
-     Brief mục 5 liệt kê VAT trong Chi_phi_khac nhưng còn để ngỏ ở câu hỏi #3 → giữ bản Excel. */
+  /* A Tân + phí xuất chỉ còn để xem ở popup. LN ròng lấy đúng table chi phí để tránh tính trùng. */
   const otherCost = fee + atan;
-  const chiPhiKhac = otherCost;
-  const totalCost = thucChi + chiPhiKhac;
-  const gross = p.contract - thucChi;      /* LN gộp  = HĐ − thực chi */
-  /* LN ròng: OT đã nằm trong thucChi, không lấy atanThuc vì atanThuc cũng hiển thị OT. */
-  const net   = p.contract - otherCost - thucChi;
+  const chiPhiKhac = 0;
+  const totalCost = thucChi;
+  const gross = p.contract - thucChi;      /* LN gộp  = HĐ − table chi phí */
+  const net   = p.contract - thucChi;      /* LN ròng = HĐ − table chi phí */
 
   const advRate = 0;
   const advance = 0;
@@ -5470,7 +5468,6 @@ function renderProDetail(){
       + 'Chỉ khi bấm "Đã thu" thì số đã thu mới trừ khỏi dự toán và cộng vào tiền mặt.\n\n'
       + 'Lãi ròng = Hợp đồng ' + fmt(p.contract) + '\n'
       + '  − CP sản xuất + OT ' + fmt(c.thucChi) + '\n'
-      + '  − Hoá đơn & A Tân  ' + fmt(c.chiPhiKhac) + '\n'
       + '  = ' + fmt(c.net));
   });
   const toggleAtanMode = focusBudget=>{
@@ -5742,7 +5739,7 @@ function calc(){
     advLeftEl.className = c.netAfterAdv >= 0 ? 'c-green' : 'c-red';
     $('adv-rate-l').textContent = 'đã bỏ';
     set('pro-other-l', c.otherCost); set('pro-total-l', c.totalCost);
-    $('pro-total-note').textContent = 'gồm ' + fmtShort(c.otherCost) + ' ₫ hoá đơn & A Tân';
+    $('pro-total-note').textContent = 'lấy từ table chi phí';
     set('pro-gross-l', c.gross, true); set('pro-net-l', c.net, true);
     set('pro-atan-sum-hint', c.atanTong);
     const mgPct = c.margin * 100;
@@ -5782,7 +5779,7 @@ function calc(){
       const lnEl = $('pk-lnrong');
       lnEl.textContent = fmt(c.net);
       lnEl.className = c.net >= 0 ? '' : 'neg-num';
-      $('pk-lnrong-note').textContent = 'sau CP sản xuất + hoá đơn & A Tân';
+      $('pk-lnrong-note').textContent = 'theo table chi phí';
       set('pk-thuchi', c.thucChi);
       $('pk-thuchi-note').textContent = 'CP gốc ' + fmtShort(c.prodSum) + ' + OT ' + fmtShort(c.otSum);
       set('pk-tuung', c.daTraTuUng);
