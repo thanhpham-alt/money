@@ -2186,11 +2186,11 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   #panel-pro .prod-table tbody td[data-label="Thanh toán"],#panel-pro .prod-table tbody td[data-label="Thao tác"]{grid-column:1/-1}
   #panel-pro .prod-table tbody td.mid{text-align:left}
   #panel-pro .prod-table tbody .qr-cell{justify-content:flex-start}
-  #panel-pro .prod-table tfoot{display:block;margin-top:8px}
-  #panel-pro .prod-table tfoot tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-radius:11px;background:var(--bg2)}
-  #panel-pro .prod-table tfoot td{display:block;padding:0!important;border:0!important;background:transparent!important}
-  #panel-pro .prod-table tfoot td:first-child{grid-column:1/-1}
-  #panel-pro .prod-table tfoot td:last-child{display:none}
+  #panel-pro .prod-table tbody.pro-total-head{display:block;margin-top:8px}
+  #panel-pro .prod-table tbody.pro-total-head tr{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-radius:11px;background:var(--bg2)}
+  #panel-pro .prod-table tbody.pro-total-head td{display:block;padding:0!important;border:0!important;background:transparent!important}
+  #panel-pro .prod-table tbody.pro-total-head td:first-child{grid-column:1/-1}
+  #panel-pro .prod-table tbody.pro-total-head td:last-child{display:none}
   .prod-total-value{text-align:left}
   .pd-panel .tablewrap{overflow-x:auto}.pd-table{display:table!important;min-width:720px!important}
   .pd-table thead{display:table-header-group!important}.pd-table tbody{display:table-row-group!important}.pd-table tbody tr{display:table-row!important}
@@ -5314,15 +5314,15 @@ function renderProDetail(){
               <th class="mid prod-sort" data-psort="qr">QR <span class="ps-ar">⇅</span></th>
             </tr></thead>
             <tbody id="pro-quick"></tbody>
-            <tbody id="pro-prod-body"></tbody>
-            <tfoot><tr class="prod-total-row">
+            <tbody class="pro-total-head"><tr class="prod-total-row">
               <td colspan="3"><div class="prod-total-label"><b>Tổng cộng</b><small id="pro-foot-count">0 khoản</small></div></td>
               <td class="prod-total-value" id="pro-foot-cost">0 ₫</td>
               <td class="prod-total-value ot" id="pro-foot-ot">0 ₫</td>
               <td class="prod-total-value due" id="pro-foot-due">0 ₫</td>
               <td></td>
               <td></td>
-            </tr></tfoot>
+            </tr></tbody>
+            <tbody id="pro-prod-body"></tbody>
           </table>
           <datalist id="crew-dl"></datalist>
         <datalist id="agency-dl"></datalist>
