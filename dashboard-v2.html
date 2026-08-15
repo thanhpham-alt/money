@@ -2852,6 +2852,7 @@ const esc = s => String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;',
 const ACCESS_LOCK = {
   trustedKey: 'money2026_trusted_device_v1',
   passHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
+  grantHash: '8a176435c929642668c9c7c606ec3b30a1c504941b0f06783e612bc6cc50cdf1',
   deviceLabel: 'd0:c0:50:d9:62:2d'
 };
 async function sha256Text(text){
@@ -2873,9 +2874,23 @@ function trustThisDevice(){
     trustedAt:new Date().toISOString()
   }));
 }
+async function grantDeviceFromUrl(){
+  const params = new URLSearchParams(location.search);
+  const grant = params.get('grant') || params.get('mac');
+  if(!grant) return false;
+  const hash = await sha256Text(grant.trim().toLowerCase());
+  if(hash !== ACCESS_LOCK.grantHash) return false;
+  trustThisDevice();
+  params.delete('grant');
+  params.delete('mac');
+  const clean = location.pathname + (params.toString() ? '?' + params.toString() : '') + (location.hash || '');
+  history.replaceState(null, '', clean);
+  return true;
+}
 async function ensureAccessUnlocked(){
   const root = document.body;
   const lock = $('auth-lock');
+  try{ await grantDeviceFromUrl(); }catch(e){}
   if(isTrustedDevice()){
     root.classList.remove('auth-locked');
     if(lock) lock.hidden = true;
