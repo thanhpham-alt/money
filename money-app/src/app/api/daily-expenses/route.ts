@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       occurredAt: body.occurredAt ? new Date(body.occurredAt) : new Date(),
       kind: parseKind(body.kind),
       amount: Number(body.amount) || 0,
-      description: String(body.description || "").slice(0, 500),
+      description: String(body.description || "").slice(0, 800),
       category: String(body.category || "khac"),
       source: body.source === "ocr" ? "ocr" : "manual",
       bankRef: body.bankRef ? String(body.bankRef).slice(0, 100) : null,

@@ -2428,16 +2428,22 @@ body.public-mode #panel-bs-public{display:none!important}
 .daily-add{display:grid;grid-template-columns:130px 130px 140px 1fr auto;gap:8px;margin-bottom:12px}
 .daily-add input,.daily-add select{border:1px solid var(--border);border-radius:10px;background:var(--input);color:var(--text);
   padding:9px 10px;font:inherit;font-size:13px}
-.daily-list{max-height:360px;overflow:auto;border:1px solid var(--border2);border-radius:12px}
+.daily-list{max-height:520px;overflow:auto;border:1px solid var(--border2);border-radius:12px}
 .daily-day{padding:7px 12px;background:var(--bg2);color:var(--faint);font-size:11px;font-weight:750;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0}
-.daily-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid var(--border2)}
-.daily-row .kind{flex:none;border-radius:8px;padding:2px 7px;font-size:10px;font-weight:800;text-transform:uppercase}
+.daily-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-top:1px solid var(--border2)}
+.daily-row .kind{flex:none;border-radius:8px;padding:3px 7px;font-size:10px;font-weight:800;text-transform:uppercase;margin-top:2px}
 .daily-row .kind.job{background:var(--accent-soft);color:var(--accent)}
 .daily-row .kind.in{background:var(--green-soft);color:var(--green)}
 .daily-row .kind.out{background:var(--red-soft);color:var(--red)}
 .daily-row .desc{min-width:0;flex:1}
-.daily-row .desc b{display:block;font-size:13px}.daily-row .desc i{font-style:normal;font-size:11px;color:var(--faint)}
-.daily-row .amt{font-weight:800;font-variant-numeric:tabular-nums}
+.daily-row .desc b{display:block;font-size:14px;line-height:1.35}
+.daily-row .desc .when{display:block;margin:2px 0 6px;font-size:12px;font-weight:650;color:var(--sub)}
+.daily-row .desc .line{display:block;font-size:12.5px;color:var(--text);line-height:1.45}
+.daily-row .desc .line em{font-style:normal;color:var(--faint);font-weight:650;margin-right:6px}
+.daily-row .desc .cashnote{display:block;margin-top:6px;font-size:12px;font-weight:700}
+.daily-row .desc .cashnote.out{color:var(--red)}
+.daily-row .desc .cashnote.in{color:var(--green)}
+.daily-row .amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap;padding-top:2px}
 .daily-row .amt.in{color:var(--green)}.daily-row .amt.out{color:var(--red)}
 .daily-empty,.daily-status{padding:16px;text-align:center;color:var(--faint);font-size:13px}
 @media(max-width:820px){.daily-add{grid-template-columns:1fr 1fr}.daily-totals{grid-template-columns:1fr}}
@@ -2725,14 +2731,18 @@ body.public-mode #panel-bs-public{display:none!important}
     <div class="bill-grid">
       <div class="bill-preview" id="bill-preview"><div class="ph">Kéo thả ảnh vào đây<br>hoặc bấm để chọn file<br><small>OCR đọc ngày · số tiền · nội dung</small></div></div>
       <div class="bill-fields">
-        <label>Ngày giao dịch
-          <input type="date" id="bill-date">
-        </label>
+        <div class="split2">
+          <label>Ngày giao dịch<input type="date" id="bill-date"></label>
+          <label>Giờ<input type="time" id="bill-time"></label>
+        </div>
         <label>Số tiền
           <input type="text" class="money" id="bill-amount" placeholder="250.000">
         </label>
-        <label>Nội dung
-          <textarea id="bill-desc" placeholder="TRAN THI KHUONG · Nhat Thanh chuyen khoan nhanh qua Zalo"></textarea>
+        <label>Người nhận / gửi
+          <input type="text" id="bill-person" placeholder="TRAN THI KHUONG">
+        </label>
+        <label>Nội dung chuyển khoản
+          <textarea id="bill-desc" placeholder="Nhat Thanh chuyen khoan nhanh qua Zalo"></textarea>
         </label>
         <label>Loại
           <select id="bill-kind">
@@ -6805,47 +6815,6 @@ function applyDailyCash(item, sign){
 function dailyPosted(item){
   return String(item.note||'').includes('__cash:1');
 }
-function renderDailyRows(host, items, emptyText){
-  if(!host) return;
-  if(!items.length){
-    host.innerHTML = '';
-    host.hidden = true;
-    return emptyText;
-  }
-  host.hidden = false;
-  const groups = new Map();
-  items.forEach(it=>{
-    const day = String(it.occurredAt||'').slice(0,10);
-    if(!groups.has(day)) groups.set(day, []);
-    groups.get(day).push(it);
-  });
-  host.innerHTML = [...groups.entries()].map(([day, rows])=>{
-    const label = day ? new Date(day+'T00:00:00').toLocaleDateString('vi-VN', {weekday:'short', day:'2-digit', month:'2-digit'}) : '—';
-    return `<div class="daily-day">${esc(label)}</div>` + rows.map(it=>{
-      const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
-      const sign = it.kind==='expense' ? '−' : '+';
-      const meta = [it.bank, it.bankRef ? '#'+it.bankRef : '', it.source==='ocr'?'OCR':'Nhập tay'].filter(Boolean).join(' · ');
-      return `<div class="daily-row">
-        <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
-        <div class="desc"><b>${esc(it.description||'—')}</b><i>${esc(meta)}</i></div>
-        <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
-        <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
-      </div>`;
-    }).join('');
-  }).join('');
-  host.querySelectorAll('[data-daily-del]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
-      if(!confirm('Xoá dòng này? Tiền hiện có sẽ hoàn lại.')) return;
-      const id = btn.dataset.dailyDel;
-      const item = (DAILY_CACHE.items||[]).find(x=>x.id===id);
-      const res = await fetch('/api/daily-expenses?id=' + encodeURIComponent(id), { method:'DELETE' });
-      if(!res.ok){ alert('Không xoá được'); return; }
-      if(item && dailyPosted(item)) applyDailyCash(item, -1);
-      loadDaily();
-    });
-  });
-  return '';
-}
 function renderChiPanel(){
   const items = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense');
   if($('jt-n-chi')) $('jt-n-chi').textContent = items.length;
@@ -6880,8 +6849,89 @@ async function loadDaily(){
     if(status){ status.hidden = false; status.textContent = 'Không tải được hằng ngày (API).'; }
   }
 }
+function dailyMeta(item){
+  try{
+    const raw = String(item.note||'');
+    const m = raw.match(/__meta:(\{.*\})/);
+    return m ? JSON.parse(m[1]) : {};
+  }catch(e){ return {}; }
+}
+function formatDailyWhen(iso, meta){
+  const d = new Date(iso);
+  if(isNaN(+d)) return '—';
+  const date = d.toLocaleDateString('vi-VN', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+  const time = meta.time || ((/T\d{2}:\d{2}/.test(String(iso)) && !/T00:00/.test(String(iso)))
+    ? d.toLocaleTimeString('vi-VN', { hour:'2-digit', minute:'2-digit' }) : '');
+  return time ? (date + ' · ' + time) : date;
+}
+function renderDailyRows(host, items, emptyText){
+  if(!host) return;
+  if(!items.length){
+    host.innerHTML = '';
+    host.hidden = true;
+    return emptyText;
+  }
+  host.hidden = false;
+  const groups = new Map();
+  items.forEach(it=>{
+    const day = String(it.occurredAt||'').slice(0,10);
+    if(!groups.has(day)) groups.set(day, []);
+    groups.get(day).push(it);
+  });
+  host.innerHTML = [...groups.entries()].map(([day, rows])=>{
+    const label = day ? new Date(day+'T00:00:00').toLocaleDateString('vi-VN', {
+      weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'
+    }) : '—';
+    return `<div class="daily-day">${esc(label)}</div>` + rows.map(it=>{
+      const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
+      const sign = it.kind==='expense' ? '−' : '+';
+      const meta = dailyMeta(it);
+      const title = meta.person || it.description || 'Chuyển khoản';
+      const memo = meta.memo && meta.memo !== title ? meta.memo : (it.description !== title ? it.description : '');
+      const xfer = [
+        it.bank ? ('Từ ' + it.bank) : '',
+        meta.account ? ('TK nhận ' + meta.account) : '',
+        it.bankRef ? ('Mã GD ' + it.bankRef) : '',
+        it.source==='ocr' ? 'OCR' : 'Nhập tay'
+      ].filter(Boolean).join(' · ');
+      const cash = it.kind==='expense'
+        ? 'Đã trừ ' + fmt(+it.amount||0) + ' khỏi Tiền hiện có'
+        : it.kind==='income' ? 'Đã cộng ' + fmt(+it.amount||0) + ' vào Tiền hiện có' : '';
+      return `<div class="daily-row">
+        <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
+        <div class="desc">
+          <b>${esc(title)}</b>
+          <span class="when">${esc(formatDailyWhen(it.occurredAt, meta))}</span>
+          ${memo ? `<span class="line"><em>Nội dung</em>${esc(memo)}</span>` : ''}
+          ${xfer ? `<span class="line"><em>Chuyển khoản</em>${esc(xfer)}</span>` : ''}
+          ${cash ? `<span class="cashnote ${kind}">${esc(cash)}</span>` : ''}
+        </div>
+        <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
+        <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
+      </div>`;
+    }).join('');
+  }).join('');
+  host.querySelectorAll('[data-daily-del]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(!confirm('Xoá dòng này? Tiền hiện có sẽ hoàn lại.')) return;
+      const id = btn.dataset.dailyDel;
+      const item = (DAILY_CACHE.items||[]).find(x=>x.id===id);
+      const res = await fetch('/api/daily-expenses?id=' + encodeURIComponent(id), { method:'DELETE' });
+      if(!res.ok){ alert('Không xoá được'); return; }
+      if(item && dailyPosted(item)) applyDailyCash(item, -1);
+      loadDaily();
+    });
+  });
+  return '';
+}
 async function addDaily(payload){
-  const note = [payload.note, '__cash:1'].filter(Boolean).join(' ');
+  const extra = {
+    time: payload.time || '',
+    person: payload.person || '',
+    memo: payload.memo || '',
+    account: payload.account || ''
+  };
+  const note = ['__cash:1', '__meta:' + JSON.stringify(extra)].filter(Boolean).join(' ');
   const res = await fetch('/api/daily-expenses', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ ...payload, note })
@@ -6894,14 +6944,20 @@ async function addDaily(payload){
 }
 let BILL_QUEUE = [];
 let BILL_PREVIEW_URL = '';
+let BILL_ACCOUNT = '';
 function billDraft(){
+  const date = ($('bill-date') && $('bill-date').value) || todayISO();
+  const time = ($('bill-time') && $('bill-time').value) || '';
+  const person = (($('bill-person') && $('bill-person').value) || '').trim();
+  const memo = (($('bill-desc') && $('bill-desc').value) || '').trim();
   return {
-    occurredAt: ($('bill-date') && $('bill-date').value) || todayISO(),
+    occurredAt: time ? (date + 'T' + time + ':00') : date,
     amount: parseNum($('bill-amount') && $('bill-amount').value),
-    description: (($('bill-desc') && $('bill-desc').value) || '').trim(),
+    description: [person, memo].filter(Boolean).join(' · ') || 'Chuyển khoản',
     kind: ($('bill-kind') && $('bill-kind').value) || 'expense',
     bank: (($('bill-bank') && $('bill-bank').value) || '').trim() || null,
-    bankRef: (($('bill-ref') && $('bill-ref').value) || '').trim() || null
+    bankRef: (($('bill-ref') && $('bill-ref').value) || '').trim() || null,
+    person, memo, time, account: BILL_ACCOUNT
   };
 }
 function paintBillCash(){
@@ -6919,11 +6975,14 @@ function paintBillCash(){
 }
 function fillBillForm(ocr, previewUrl){
   if($('bill-date')) $('bill-date').value = (ocr.occurredAt || todayISO()).slice(0,10);
+  if($('bill-time')) $('bill-time').value = ocr.time || '';
   if($('bill-amount')) $('bill-amount').value = ocr.amount ? nf.format(+ocr.amount) : '';
-  if($('bill-desc')) $('bill-desc').value = ocr.description || '';
+  if($('bill-person')) $('bill-person').value = ocr.person || '';
+  if($('bill-desc')) $('bill-desc').value = ocr.memo || ocr.description || '';
   if($('bill-kind')) $('bill-kind').value = ocr.kind === 'income' ? 'income' : 'expense';
   if($('bill-bank')) $('bill-bank').value = ocr.bank || '';
   if($('bill-ref')) $('bill-ref').value = ocr.bankRef || '';
+  BILL_ACCOUNT = ocr.account || '';
   const prev = $('bill-preview');
   if(prev){
     if(previewUrl) prev.innerHTML = `<img src="${previewUrl}" alt="bill">`;
@@ -6967,6 +7026,7 @@ function parseBankReceipt(raw){
   }
 
   let occurredAt = todayISO();
+  let time = '';
   const dm = text.match(/(\d{1,2})\s*(?:thg|thang|\/|-)\s*(\d{1,2})[,/\-\s]+(\d{4})/i)
           || text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
   if(dm){
@@ -6974,6 +7034,8 @@ function parseBankReceipt(raw){
     const mm = String(dm[2]).padStart(2,'0');
     occurredAt = dm[3] + '-' + mm + '-' + dd;
   }
+  const tm = text.match(/(?:luc|lúc|at)?\s*(\d{1,2})[:hgio](\d{2})/i);
+  if(tm) time = String(tm[1]).padStart(2,'0') + ':' + tm[2];
 
   let bankRef = null;
   const rm = upper.match(/\b(FT\d{8,}|\d{10,}|GD[A-Z0-9]{6,})\b/);
@@ -7000,10 +7062,15 @@ function parseBankReceipt(raw){
            || raw.match(/Lời nhắn[:\s]+([^\n]{3,80})/i);
   if(mm2) memo = mm2[1].replace(/\s+/g,' ').trim();
 
+  let account = '';
+  const am = text.match(/(?:so tai khoan|stk|tai khoan nhan)[:\s]*([0-9][0-9\s]{6,})/i)
+          || raw.match(/\b(\d{4}\s?\d{4}\s?\d{2,})\b/);
+  if(am) account = am[1].replace(/\s+/g,' ').trim();
+
   const description = [person, memo].filter(Boolean).join(' · ')
     || (kind==='expense' ? 'Chuyển khoản' : 'Nhận tiền');
 
-  return { amount, description, occurredAt, bankRef, bank, kind, category:'khac', confidence: amount ? 0.7 : 0.2, raw: text };
+  return { amount, description, person, memo, time, account, occurredAt, bankRef, bank, kind, category:'khac', confidence: amount ? 0.7 : 0.2, raw: text };
 }
 let TESS_WORKER = null;
 async function loadTesseract(){
