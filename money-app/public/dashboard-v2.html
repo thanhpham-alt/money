@@ -2513,7 +2513,8 @@ body.public-mode #panel-bs-public{display:none!important}
       <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
       <div class="ov-source-grid">
         <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
-        <button type="button" class="ov-source" data-scroll="job-body"><span>Job / Linh tinh</span><b id="ov-receivable-job">0 ₫</b></button>
+        <button type="button" class="ov-source" data-job-view="roi"><span>Thu từ Job</span><b id="ov-job-paid">0 ₫</b></button>
+        <button type="button" class="ov-source" data-job-view="chua" data-scroll="job-body"><span>Job còn thu</span><b id="ov-receivable-job">0 ₫</b></button>
         <button type="button" class="ov-source" data-goto="bluescope"><span>Bluescope</span><b id="ov-receivable-bs">0 ₫</b></button>
         <label class="ov-source is-static"><span>Tiền hiện còn</span><input type="text" class="money ov-cash-input" id="v_h3" value="37000000" placeholder="0"></label>
         <div class="ov-source is-static"><span>Còn lại</span><b id="ov-cash-left">0 ₫</b></div>
@@ -4360,7 +4361,7 @@ function renderJobs(){
       <td class="job-days-cell" data-job-payment-days>${jobPaymentDaysHTML(r[5], r[4])}</td>
       <td class="num"><input class="plain num money" data-j="${i}" data-f="2" value="${nf.format(+r[2]||0)}"></td>
       <td class="mid"><button class="srcbtn job-status ${r[4]?'src-cty_ung':'src-chua_tra'}" data-jchk="${i}"
-            title="${r[4]?'Đã thu — bấm để trả về danh sách chưa thu':'Chưa thu — bấm khi đã nhận tiền'}">${r[4]?'Đã thu':'Chưa thu'}</button></td>
+            title="${r[4]?'Đã cộng vào Tiền hiện có — bấm để hoàn lại':'Bấm khi đã nhận tiền — cộng vào Tiền hiện có'}">${r[4]?'Đã thu':'Chưa thu'}</button></td>
       <td class="num computed ${((+r[2]||0)-(+r[3]||0))>=0?'pos':'neg'}">${fmt((+r[2]||0)-(+r[3]||0))}</td>
       <td class="mid"><button class="rowbtn" data-jdel="${i}">✕</button></td>
     </tr>`;
@@ -4408,11 +4409,7 @@ function renderJobs(){
     }
   });
   body.querySelectorAll('[data-jchk]').forEach(b=> b.addEventListener('click', e=>{
-    const i = +e.currentTarget.dataset.jchk;
-    const amount = (+S.jobs[i][2]||0) - (+S.jobs[i][3]||0);
-    addToCashOnHand(S.jobs[i][4] ? -amount : amount);
-    S.jobs[i][4] = !S.jobs[i][4];
-    renderJobs(); calc();
+    void collectJob(+e.currentTarget.dataset.jchk);
   }));
   body.querySelectorAll('[data-jdel]').forEach(b=> b.addEventListener('click', e=>{
     S.jobs.splice(+e.currentTarget.dataset.jdel, 1); renderJobs(); calc();
@@ -6232,6 +6229,7 @@ function calc(){
   const cashLeftFromReceivables = receivableTotal - debtWithoutShinhan;
   set('ov-receivable-total', receivableTotal, true);
   set('ov-receivable-pro', proThuVe);
+  set('ov-job-paid', sumPaid);
   set('ov-receivable-job', jobChuaThu);
   set('ov-receivable-bs', sumBS);
   set('ov-cash-left', cashLeftFromReceivables, true);
@@ -6432,6 +6430,14 @@ document.addEventListener('click', e=>{
   if(el){ goTab(el.dataset.goto); return; }
   const op = e.target.closest('[data-open]');
   if(op){ openPop(op.dataset.open); return; }
+  const jv = e.target.closest('[data-job-view]');
+  if(jv){
+    JVIEW = jv.dataset.jobView;
+    renderJobs();
+    const t = $('job-body') || $('job-tablewrap');
+    if(t){ t.scrollIntoView({behavior:'smooth', block:'start'}); }
+    return;
+  }
   const sc = e.target.closest('[data-scroll]');
   if(sc){
     const t = $(sc.dataset.scroll);
@@ -6924,6 +6930,33 @@ function renderDailyRows(host, items, emptyText){
   });
   return '';
 }
+async function collectJob(i){
+  const job = S.jobs[i]; if(!job) return;
+  const amount = (+job[2]||0) - (+job[3]||0);
+  const turningOn = !job[4];
+  addToCashOnHand(turningOn ? amount : -amount);
+  job[4] = turningOn;
+  if(!job[5]) job[5] = todayISO();
+  if(turningOn){
+    try{
+      const saved = await addDaily({
+        occurredAt: job[5] || todayISO(),
+        kind: 'income',
+        amount,
+        description: [job[0]||'Job', job[1]||''].filter(Boolean).join(' · '),
+        person: job[1] || '',
+        memo: 'Thu về từ job' + (job[6] ? ' · Acc ' + job[6] : ''),
+        source: 'manual',
+        skipCash: true
+      });
+      job[8] = saved && saved.id;
+    }catch(err){ console.warn(err); }
+  }else if(job[8]){
+    try{ await fetch('/api/daily-expenses?id=' + encodeURIComponent(job[8]), { method:'DELETE' }); }catch(e){}
+    job[8] = '';
+  }
+  renderJobs(); calc();
+}
 async function addDaily(payload){
   const extra = {
     time: payload.time || '',
@@ -6931,14 +6964,14 @@ async function addDaily(payload){
     memo: payload.memo || '',
     account: payload.account || ''
   };
-  const note = ['__cash:1', '__meta:' + JSON.stringify(extra)].filter(Boolean).join(' ');
+  const note = [payload.skipCash ? '' : '__cash:1', '__meta:' + JSON.stringify(extra)].filter(Boolean).join(' ');
   const res = await fetch('/api/daily-expenses', {
     method:'POST', headers:{'Content-Type':'application/json'},
     body: JSON.stringify({ ...payload, note })
   });
   if(!res.ok) throw new Error('save failed');
   const saved = await res.json();
-  applyDailyCash(saved, 1);
+  if(!payload.skipCash) applyDailyCash(saved, 1);
   await loadDaily();
   return saved;
 }
