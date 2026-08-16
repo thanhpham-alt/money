@@ -4536,6 +4536,12 @@ const prodHasEntry = r => !!(
   String(r.note||'').trim() || r.qr || rowPaid(r)
 );
 const togglePaid = r => { r.nguon = rowPaid(r) ? 'chua_tra' : 'da_tra'; delete r.paid; };
+function applyProducerOutRule(p){
+  (p.prod||[]).forEach(r=>{
+    if(isProducer(r) && rowPaid(r)) r.out = false;
+  });
+  p.pdOut = false;
+}
 const prodPersonName = r => {
   const c = r.crewId && S.crew.find(x=>x.id===r.crewId);
   return c ? c.ten : (r.flText||'');
@@ -4801,7 +4807,7 @@ function renderPdStrip(p){
       <span class="pd-tx"><b>Chi phí Producer</b>
         <i>${rows.length?`${rows.length} khoản trong dải${outside.length?` · ${outside.length} đã ra bảng`:''} · ${paid} đã TT`:'chưa có khoản nào — thêm tay'}</i></span>
       <span class="pd-sum">${fmt(tong)}</span>
-      <button class="iconbtn sm pd-outbtn" type="button" id="pd-out" title="Tick ô rồi đưa các khoản đã chọn ra bảng chính">Đưa ra ngoài</button>
+      <button class="iconbtn sm pd-outbtn" type="button" id="pd-out" title="Đưa khoản chưa thanh toán ra bảng chính — khoản đã TT ở lại">Đưa ra ngoài</button>
       <span class="pd-caret">${open?'▾':'▸'}</span>
     </div>
     <div class="pd-panel" ${open?'':'hidden'}>
@@ -4816,22 +4822,22 @@ function renderPdStrip(p){
       </div>
       <div class="pd-actions">
         <button class="iconbtn sm" id="pd-add">+ Thêm khoản</button>
-        <button class="iconbtn sm" type="button" id="pd-out-2">Đưa ô đã chọn ra ngoài</button>
+        <button class="iconbtn sm" type="button" id="pd-out-2">Đưa khoản chưa TT ra ngoài</button>
         <div class="pd-total"><span>Tổng chi phí Producer</span><b>${fmt(tong)}</b></div>
       </div>
     </div>`;
 
-  const selectedIdx = ()=> [...host.querySelectorAll('[data-pd-pick]:checked')].map(el=>+el.dataset.pdPick);
   const bringOut = ev=>{
     ev.preventDefault(); ev.stopPropagation();
-    let idxs = selectedIdx();
-    if(!idxs.length){
-      alert('Tick ô các khoản muốn đưa ra bảng chính.');
+    applyProducerOutRule(p);
+    const unpaid = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r) && !rowPaid(o.r));
+    if(!unpaid.length){
+      alert('Không còn khoản Producer chưa thanh toán để đưa ra ngoài.');
       p._pdOpen = true; renderPdStrip(p);
       return;
     }
-    idxs.forEach(i=>{ if(p.prod[i]) p.prod[i].out = true; });
-    p.pdOut = false; p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
+    unpaid.forEach(({r})=>{ r.out = true; });
+    p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
   };
   $('pd-open').addEventListener('click', e=>{
     if(e.target.closest('#pd-out')) return;
@@ -4844,7 +4850,7 @@ function renderPdStrip(p){
     const idx = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r) && !o.r.out);
     $('pd-body').innerHTML = idx.length ? idx.map(({r,i}, n)=>`
       <tr class="${rowPaid(r)?'is-paid':''}">
-        <td class="pick"><input type="checkbox" class="pd-pick" data-pd-pick="${i}"></td>
+        <td class="pick"><input type="checkbox" class="pd-pick" data-pd-pick="${i}" ${rowPaid(r)?'disabled title="Đã thanh toán — giữ trong Producer"':''}></td>
         <td class="stt">${n+1}</td>
         <td><input class="plain" data-i="${i}" data-k="ten" value="${esc(r.ten)}" placeholder="Hạng mục"></td>
         <td class="num"><input class="plain num money" data-i="${i}" data-k="cp" value="${nf.format(+r.cp||0)}"></td>
@@ -4861,7 +4867,7 @@ function renderPdStrip(p){
     if(all){
       all.checked = false;
       all.addEventListener('change', ()=>{
-        host.querySelectorAll('[data-pd-pick]').forEach(el=>{ el.checked = all.checked; });
+        host.querySelectorAll('[data-pd-pick]:not(:disabled)').forEach(el=>{ el.checked = all.checked; });
       });
     }
 
@@ -4876,7 +4882,12 @@ function renderPdStrip(p){
       if(isMoney) inp.addEventListener('blur', ()=> renderPdStrip(p));
     });
     $('pd-body').querySelectorAll('[data-paid]').forEach(b=>
-      b.addEventListener('click', ()=>{ togglePaid(p.prod[+b.dataset.paid]); renderPdStrip(p); calc(); }));
+      b.addEventListener('click', ()=>{
+        const r = p.prod[+b.dataset.paid];
+        togglePaid(r);
+        if(isProducer(r) && rowPaid(r)) r.out = false;
+        renderPdStrip(p); renderProd(p); calc();
+      }));
     $('pd-body').querySelectorAll('[data-del]').forEach(b=>
       b.addEventListener('click', ()=>{ deleteProdRow(p, +b.dataset.del, ()=>{ renderPdStrip(p); calc(); }); }));
   };
@@ -4896,9 +4907,10 @@ function renderProd(p){
   if(dl) dl.innerHTML = S.crew.map(c=>
     `<option value="${esc(c.ten)}">${esc([c.vitri, c.sdt].filter(Boolean).join(' · '))}</option>`).join('');
 
-  /* Chế độ Tất cả: Producer ở dải riêng, trừ dòng đã tick “Đưa ra ngoài”. */
+  applyProducerOutRule(p);
+  /* Chế độ Tất cả: Producer đã TT ở dải; chưa TT mới được đưa ra bảng. */
   let prodRows = p.prod.map((r,i)=>({r,i}));
-  if(PROD_FILTER === 'all' && !p.pdOut) prodRows = prodRows.filter(o=>!isProducer(o.r) || o.r.out);
+  if(PROD_FILTER === 'all' && !p.pdOut) prodRows = prodRows.filter(o=>!isProducer(o.r) || (o.r.out && !rowPaid(o.r)));
   if(PROD_FILTER === 'paid') prodRows = prodRows.filter(o=>rowPaid(o.r));
   if(PROD_FILTER === 'unpaid') prodRows = prodRows.filter(o=>!rowPaid(o.r));
   const searchNeedle = NORM(PROD_SEARCH);
@@ -5034,7 +5046,12 @@ function renderProd(p){
   });
 
   body.querySelectorAll('[data-paid]').forEach(b=>{
-    b.addEventListener('click', ()=>{ togglePaid(p.prod[+b.dataset.paid]); renderProd(p); calc(); });
+    b.addEventListener('click', ()=>{
+      const r = p.prod[+b.dataset.paid];
+      togglePaid(r);
+      if(isProducer(r) && rowPaid(r)) r.out = false;
+      renderProd(p); renderPdStrip(p); calc();
+    });
   });
   body.querySelectorAll('input.plain').forEach(inp=>{
     const isMoney = inp.classList.contains('money');
