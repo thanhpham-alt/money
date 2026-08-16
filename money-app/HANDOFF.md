@@ -1,7 +1,10 @@
 # HANDOFF — MONEY 2026 Web App
 
-**Cập nhật:** 2026-08-07
-**Project:** `/Users/macbook/Documents/MAC MEDIA/MONEY_2026/money-app`
+> **Lỗi thời (07/08).** Bản đang chạy là `dashboard-v2.html` (rewrite Vercel), không phải nav Next 2 tab bên dưới.  
+> Đọc **`../HANDOFF-DASHBOARD.md`** (16/08/2026).
+
+**Cập nhật:** 2026-08-07  
+**Project:** `/Users/macbook/Claude Code/MONEY 2026/money-app`
 **Local:** http://localhost:3001 · **Stack:** Next 15 · Prisma + SQLite · Tailwind 4
 
 ```bash
