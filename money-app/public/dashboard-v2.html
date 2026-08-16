@@ -2821,13 +2821,13 @@ body.public-mode #panel-bs-public{display:none!important}
           <input type="text" class="money" id="bill-amount" placeholder="250.000">
         </label>
         <label>Tiêu đề hạn mục
-          <input type="text" id="bill-title" placeholder="Lê Thị Khương · trả lương">
+          <input type="text" id="bill-title" placeholder="Lê Thị Khương · trả lương" autocomplete="off">
         </label>
         <label>Người nhận / gửi
-          <input type="text" id="bill-person" placeholder="LE THI KHUONG">
+          <input type="text" id="bill-person" placeholder="NGUYEN THI THUY NHI" autocomplete="off">
         </label>
         <label>Nội dung chuyển khoản
-          <textarea id="bill-desc" placeholder="Nhat Thanh chuyen khoan nhanh qua Zalo"></textarea>
+          <textarea id="bill-desc" placeholder="Nhat Thanh chuyen khoan nhanh qua Zalo" autocomplete="off"></textarea>
         </label>
         <label>Loại
           <select id="bill-kind">
@@ -7216,16 +7216,21 @@ function paintBillCash(){
   if(saveBtn) saveBtn.textContent = d.kind === 'income' ? 'Ghi & cộng tiền' : 'Ghi & trừ tiền';
   if($('bill-mob-cash-val')) $('bill-mob-cash-val').textContent = fmt(money('v_h3'));
 }
+function setBillField(id, value){
+  const el = $(id); if(!el) return;
+  el.value = '';
+  el.value = value || '';
+}
 function fillBillForm(ocr, previewUrl){
-  if($('bill-date')) $('bill-date').value = (ocr.occurredAt || todayISO()).slice(0,10);
-  if($('bill-time')) $('bill-time').value = ocr.time || '';
-  if($('bill-amount')) $('bill-amount').value = ocr.amount ? nf.format(+ocr.amount) : '';
-  if($('bill-title')) $('bill-title').value = ocr.title || ocr.person || '';
-  if($('bill-person')) $('bill-person').value = ocr.person || '';
-  if($('bill-desc')) $('bill-desc').value = ocr.memo || '';
-  if($('bill-kind')) $('bill-kind').value = ocr.kind === 'income' ? 'income' : 'expense';
-  if($('bill-bank')) $('bill-bank').value = ocr.bank || '';
-  if($('bill-ref')) $('bill-ref').value = ocr.bankRef || '';
+  setBillField('bill-date', (ocr.occurredAt || todayISO()).slice(0,10));
+  setBillField('bill-time', ocr.time || '');
+  setBillField('bill-amount', ocr.amount ? nf.format(+ocr.amount) : '');
+  setBillField('bill-person', ocr.person || '');
+  setBillField('bill-title', ocr.title || ocr.person || '');
+  setBillField('bill-desc', ocr.memo || '');
+  setBillField('bill-kind', ocr.kind === 'income' ? 'income' : 'expense');
+  setBillField('bill-bank', ocr.bank || '');
+  setBillField('bill-ref', ocr.bankRef || '');
   BILL_ACCOUNT = ocr.account || '';
   const prev = $('bill-preview');
   if(prev){
@@ -7276,6 +7281,37 @@ function lineAfterLabels(lines, folded, labels){
   }
   return '';
 }
+function isPayeeName(s){
+  const t = String(s||'').replace(/\s+/g,' ').trim();
+  if(t.length < 2 || t.length > 60) return false;
+  if(parseVndToken(t) >= 1000) return false;
+  const u = foldVie(t).toUpperCase();
+  if(/^(VND|VNĐ|D|TECHCOMBANK|VIETCOMBANK|TPBANK|MBBANK|BIDV|MOMO)$/.test(u)) return false;
+  if(/^(TAI KHOAN|NGAN HANG|LOI NHAN|NOI DUNG|NGAY|MA GIAO)/.test(u)) return false;
+  return /^[A-ZÀ-Ỹ][A-ZÀ-Ỹ'’.\- ]{1,58}$/i.test(t) && /[A-Za-zÀ-ỹ]{2,}/.test(t);
+}
+function extractPayee(lines, folded, text, source){
+  const start = /^(toi|t0i|den|tu|from|nguoi nhan|nguoi huong)\b\s*[:.\-]?\s*(.*)$/i;
+  for(let i=0;i<folded.length;i++){
+    const m = folded[i].match(start);
+    if(!m) continue;
+    const parts = [];
+    if(m[2] && isPayeeName(m[2])) parts.push(m[2].trim());
+    for(let j=i+1;j<Math.min(i+4, lines.length);j++){
+      const raw = lines[j].trim();
+      const u = folded[j];
+      if(/^(VND|VNĐ)\b/.test(u) || parseVndToken(raw) >= 1000) break;
+      if(/^(tai khoan|ngan hang|loi nhan|noi dung|ngay|ma giao|stk)\b/i.test(u)) break;
+      if(isPayeeName(raw) && raw.split(/\s+/).length <= 6){ parts.push(raw); continue; }
+      break;
+    }
+    const name = tidyOcrName(parts.join(' '));
+    if(name.length >= 3) return name;
+  }
+  const block = text.match(/(?:^|[\n\r])\s*(?:toi|t0i|den)\s+([A-Z][A-Z\s]{2,60}?)\s+(?:VND|VNĐ)/i)
+            || source.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ\s]{2,60}?)\s+(?:VND|VNĐ)/);
+  return block ? tidyOcrName(block[1]) : '';
+}
 function parseBankReceipt(raw){
   const source = String(raw||'').replace(/\u00a0/g,' ');
   const text = foldVie(source);
@@ -7310,31 +7346,31 @@ function parseBankReceipt(raw){
     const mm = String(dm[2]).padStart(2,'0');
     occurredAt = dm[3] + '-' + mm + '-' + dd;
   }
-  const tm = text.match(/(?:luc|lúc|at)?\s*(\d{1,2})[:hgio](\d{2})/i);
+  const tm = text.match(/(?:luc|lúc)\s+(\d{1,2})[:hg.](\d{2})/i)
+          || text.match(/ngay\s+thuc\s+hien[\s\S]{0,40}?(\d{1,2})[:hg.](\d{2})/i);
   if(tm) time = String(tm[1]).padStart(2,'0') + ':' + tm[2];
 
   let bankRef = null;
   const rm = upper.match(/\b(FT\d{8,}|\d{10,}|GD[A-Z0-9]{6,})\b/);
   if(rm) bankRef = rm[1];
 
-  let bank = null;
-  if(/TECHCOMBANK|\bTCB\b/.test(upper)) bank = 'TCB';
-  else if(/VIETCOMBANK|NGOAI THUONG|\bVCB\b/.test(upper)) bank = 'VCB';
-  else if(/TPBANK|\bTPB\b/.test(upper)) bank = 'TPB';
-  else if(/\bMB\b|MBBANK/.test(upper)) bank = 'MB';
-  else if(/\bOCB\b/.test(upper)) bank = 'OCB';
-  else if(/\bSCB\b/.test(upper)) bank = 'SCB';
-  else if(/BIDV/.test(upper)) bank = 'BIDV';
-  else if(/\bACB\b/.test(upper)) bank = 'ACB';
-  else if(/MOMO/.test(upper)) bank = 'MOMO';
+  const pickBank = chunk=>{
+    const u = foldVie(chunk).toUpperCase();
+    if(/TECHCOMBANK|\bTCB\b/.test(u)) return 'TCB';
+    if(/VIETCOMBANK|NGOAI THUONG|\bVCB\b/.test(u)) return 'VCB';
+    if(/TPBANK|\bTPB\b/.test(u)) return 'TPB';
+    if(/\bMBBANK\b|\bMB\b/.test(u)) return 'MB';
+    if(/\bOCB\b/.test(u)) return 'OCB';
+    if(/\bSCB\b/.test(u)) return 'SCB';
+    if(/BIDV/.test(u)) return 'BIDV';
+    if(/\bACB\b/.test(u)) return 'ACB';
+    if(/MOMO/.test(u)) return 'MOMO';
+    return null;
+  };
+  const destBankAt = folded.findIndex(ln=>/tai khoan nhan|ngan hang nhan/i.test(ln));
+  const bank = destBankAt >= 0 ? pickBank(lines.slice(0, destBankAt).join('\n')) : pickBank(source);
 
-  let person = tidyOcrName(lineAfterLabels(lines, folded,
-    ['toi','t0i','den','to','from','tu','nguoi nhan','nguoi huong','beneficiary']));
-  if(!person){
-    const pm = text.match(/(?:toi|t0i|den|to)\s+([A-Z][A-Z ]{2,40}?)(?=\s+(?:VND|VNĐ|D|TAI |NGAY|LOI |NOI DUNG|MESSAGE|STK|SO TAI)|$)/i)
-            || source.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ ]{2,40}?)(?=\s+(?:VND|VNĐ)|$)/i);
-    if(pm) person = tidyOcrName(pm[1]);
-  }
+  const person = extractPayee(lines, folded, text, source);
 
   let memo = lineAfterLabels(lines, folded, [
     'loi nhan','l0i nhan','ldi nhan','lbi nhan','loi nhắn',
