@@ -6315,8 +6315,19 @@ const TITLE  = {overview:'Tổng quan', bluescope:'Bluescope', pro:'Production',
 const PUBLIC_SLUGS = new Set(['public/bluescope','bluescope-public','public']);
 const CLEAN_PATH_OF = {overview:'/tong-quan', bluescope:'/bluescope', pro:'/production', bspublic:'/bluescope-public'};
 const TAB_OF_PATH = Object.fromEntries(Object.entries(CLEAN_PATH_OF).map(([k,v])=>[v.replace(/^\/+/, ''), k]));
+const LAST_TAB_KEY = 'money2026_last_tab';
 let IS_PUBLIC = false;
 let PUBLIC_META = { updatedAt: '', source: 'local' };
+function rememberTab(name){
+  if(!name || name === 'bspublic') return;
+  try{ localStorage.setItem(LAST_TAB_KEY, name); }catch(e){}
+}
+function lastSavedTab(){
+  try{
+    const t = localStorage.getItem(LAST_TAB_KEY);
+    return (t && ROUTES[t]) ? t : '';
+  }catch(e){ return ''; }
+}
 
 function isPublicSlug(slug){
   const s = (slug||'').replace(/^#\/?/, '');
@@ -6415,6 +6426,7 @@ function showTab(name){
   const panel = $('panel-'+name);
   if(panel) panel.classList.add('active');
   document.title = 'MONEY 2026 — ' + (TITLE[name] || 'Nhật Thành');
+  rememberTab(name);
   return true;
 }
 function goTab(name){
@@ -6438,9 +6450,10 @@ function routeFromLocation(){
     showTab('bspublic');
     return;
   }
-  const name = TAB_OF[slug] || TAB_OF_PATH[slug] || 'overview';
+  const dummy = !slug || slug === 'dashboard-v2.html' || slug === 'index.html';
+  let name = TAB_OF[slug] || TAB_OF_PATH[slug] || (dummy ? lastSavedTab() : '') || 'overview';
   const cleanPath = CLEAN_PATH_OF[name];
-  if(location.hash && cleanPath){
+  if(cleanPath && (location.pathname !== cleanPath || location.hash)){
     history.replaceState({tab:name}, '', cleanPath + location.search);
   }
   showTab(name);
