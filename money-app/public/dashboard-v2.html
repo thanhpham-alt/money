@@ -2238,8 +2238,8 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
   .pd-table tbody td{display:table-cell!important;padding:7px!important}.pd-table tbody td::before{display:none!important}
 }
 
-/* ============ OVERVIEW V3 — Công nợ, nợ thẻ, vay Shinhan ============ */
-.ov-dashboard{display:grid;grid-template-columns:1.45fr .78fr .78fr;gap:10px;margin-bottom:10px;align-items:stretch}
+/* ============ OVERVIEW V3 — Tổng tiền + thu/chi theo tháng ============ */
+.ov-dashboard{display:grid;grid-template-columns:minmax(380px,1.05fr) minmax(360px,1.2fr);gap:10px;margin-bottom:10px;align-items:stretch}
 .ov-card{min-width:0;margin:0;padding:13px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 .ov-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
 .ov-card-head>div{min-width:0}.ov-card-head small{display:block;color:var(--faint);font-size:8px;font-weight:750;
@@ -2267,12 +2267,32 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-stat-value{display:block;margin:10px 0 6px;font-size:23px;line-height:1.08;font-weight:820;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ov-stat-card small.ov-stat-note{display:block;margin-top:auto;color:var(--faint);font-size:8.5px;line-height:1.45}
-.ov-card-debt{background:linear-gradient(150deg,var(--card),var(--red-soft));border-color:color-mix(in srgb,var(--red) 22%,var(--border))}
-.ov-card-debt .ov-card-icon{background:var(--red-soft);color:var(--red)}.ov-card-debt .ov-stat-value{color:var(--red)}
-.ov-card-bank{background:linear-gradient(150deg,var(--card),var(--blue-soft));border-color:color-mix(in srgb,var(--blue) 22%,var(--border))}
-.ov-card-bank .ov-card-icon{background:var(--blue-soft);color:var(--blue)}.ov-card-bank .ov-stat-value{color:var(--blue)}
-.ov-bank-next{display:flex;align-items:center;justify-content:space-between;gap:7px;margin-top:auto;padding-top:8px;border-top:1px solid var(--border2)}
-.ov-bank-next span{font-size:8px;color:var(--faint)}.ov-bank-next b{font-size:9.5px;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ov-chart-card{display:flex;flex-direction:column;min-height:0}
+.ov-chart-legend{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:9px;font-weight:750}
+.ov-chart-legend span{display:inline-flex;align-items:center;gap:4px;color:var(--sub)}
+.ov-chart-legend i{width:8px;height:8px;border-radius:2px;flex:0 0 auto}
+.ov-chart-legend .lg-in{background:var(--green)}.ov-chart-legend .lg-out{background:var(--red)}
+.ov-chart-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:0 0 10px}
+.ov-chart-totals div{min-width:0;padding:6px 8px;border-radius:8px;background:var(--bg2)}
+.ov-chart-totals span{display:block;color:var(--faint);font-size:8px;font-weight:750;text-transform:uppercase;letter-spacing:.35px}
+.ov-chart-totals b{display:block;margin-top:2px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ov-chart-thu{color:var(--green)}#ov-chart-chi{color:var(--red)}
+#ov-chart-net.pos{color:var(--green)}#ov-chart-net.neg{color:var(--red)}
+.ov-bars{display:flex;align-items:stretch;gap:3px;flex:1;min-height:158px;padding:2px 0 0}
+.ov-col{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px}
+.ov-col-pair{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px;min-height:0}
+.ov-bar{display:block;width:46%;max-width:14px;min-height:0;border-radius:3px 3px 1px 1px}
+.ov-bar.in{background:var(--green)}.ov-bar.out{background:var(--red)}
+.ov-col small{font-size:8px;color:var(--faint);font-weight:700;white-space:nowrap}
+.ov-col.is-now small{color:var(--text);font-weight:800}
+.ov-col .tip{display:none;position:absolute;bottom:calc(100% - 2px);left:50%;transform:translateX(-50%);
+  z-index:4;padding:7px 8px;border-radius:8px;background:var(--text);color:var(--card);white-space:nowrap;
+  box-shadow:var(--shadow-lg);pointer-events:none}
+.ov-col .tip b{display:block;margin-bottom:3px;font-size:9px}
+.ov-col .tip span{display:block;font-size:9px;font-weight:650}
+.ov-col .tip .in{color:#86efac}.ov-col .tip .out{color:#fca5a5}
+.ov-col:hover .tip{display:block}
+.ov-chart-empty{flex:1;display:grid;place-items:center;color:var(--faint);font-size:11px;font-weight:650;text-align:center;padding:18px 8px}
 .ov-loan-open{margin-left:auto;border:0;background:transparent;color:var(--blue);font:inherit;font-size:8.5px;font-weight:750;cursor:pointer;white-space:nowrap}
 .ov-loan-open:hover{text-decoration:underline}
 .loan-modal-box{max-width:720px}.loan-detail-hero{padding:15px 17px;border:1px solid color-mix(in srgb,var(--blue) 28%,var(--border));
@@ -2287,12 +2307,13 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 @media(max-width:620px){.loan-detail-grid{grid-template-columns:1fr}.loan-detail-hero b{font-size:22px}}
 
 @media(max-width:1080px){
-  .ov-dashboard{grid-template-columns:1fr 1fr}.ov-income-card{grid-column:1/-1}
+  .ov-dashboard{grid-template-columns:1fr}
 }
 
 @media(max-width:650px){
   .ov-dashboard{grid-template-columns:1fr}.ov-main-value{font-size:25px}
-  .ov-income-card{grid-column:auto}.ov-source-grid{grid-template-columns:1fr}
+  .ov-source-grid{grid-template-columns:1fr}
+  .ov-bars{min-height:132px;gap:2px}
 }
 
 /* ============ DỌN GIAO DIỆN: ẩn hết chú thích nhỏ ============ */
@@ -2527,8 +2548,7 @@ body.public-mode #panel-bs-public{display:none!important}
 
 <!-- ============ OVERVIEW ============ -->
 <div class="panel active" id="panel-overview">
-  <!-- Dashboard công nợ và nghĩa vụ nợ -->
-  <div id="hero-cards" class="ov-dashboard" aria-label="Dashboard công nợ và các khoản nợ">
+  <div id="hero-cards" class="ov-dashboard" aria-label="Tổng tiền và thu chi theo tháng">
     <section class="ov-card ov-income-card">
       <div class="ov-card-head"><span class="ov-card-icon">TT</span><div><h2>Tổng tiền</h2></div></div>
       <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
@@ -2542,18 +2562,18 @@ body.public-mode #panel-bs-public{display:none!important}
       </div>
     </section>
 
-    <section class="ov-card ov-stat-card ov-card-debt">
-      <div class="ov-card-head"><span class="ov-card-icon">💳</span><div><small>Nợ hiện tại</small><h2>Tổng nợ</h2></div></div>
-      <b class="ov-stat-value" id="ov-card-debt">0 ₫</b>
-      <small class="ov-stat-note">Nợ phải trả + nợ thẻ + lãi vay tháng</small>
-    </section>
-
-    <section class="ov-card ov-stat-card ov-card-bank">
-      <div class="ov-card-head"><span class="ov-card-icon">🏦</span><div><small>Home Equity Loan</small><h2>Nợ ngân hàng · Shinhan</h2></div>
-        <button type="button" class="ov-loan-open" data-open="loan-fold">Xem khoản vay</button></div>
-      <b class="ov-stat-value" id="ov-bank-debt">0 ₫</b>
-      <small class="ov-stat-note">Giảm <b id="ov-bank-principal">0 ₫</b> vào ngày 10 mỗi tháng</small>
-      <div class="ov-bank-next"><span>Kỳ giảm tiếp theo</span><b id="ov-bank-next">—</b></div>
+    <section class="ov-card ov-chart-card">
+      <div class="ov-card-head">
+        <span class="ov-card-icon">TC</span>
+        <div><small>12 tháng gần nhất</small><h2>Thu / chi theo tháng</h2></div>
+        <div class="ov-chart-legend"><span><i class="lg-in"></i>Thu</span><span><i class="lg-out"></i>Chi</span></div>
+      </div>
+      <div class="ov-chart-totals">
+        <div><span>Thu</span><b id="ov-chart-thu">0 ₫</b></div>
+        <div><span>Chi</span><b id="ov-chart-chi">0 ₫</b></div>
+        <div><span>Ròng</span><b id="ov-chart-net">0 ₫</b></div>
+      </div>
+      <div class="ov-bars" id="ov-bars"></div>
     </section>
   </div>
 
@@ -5992,6 +6012,70 @@ function fullVnDate(date){
     String(date.getMonth()+1).padStart(2,'0') + '/' + date.getFullYear();
 }
 
+let DAILY_CACHE = { items:[], totals:{ income:0, expense:0, job:0 } };
+function monthKeyFromISO(iso){
+  const s = String(iso||'');
+  if(/^\d{4}-\d{2}/.test(s)) return s.slice(0,7);
+  const d = new Date(s);
+  if(isNaN(+d)) return '';
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function buildMonthlyCashflow(){
+  const now = new Date();
+  const months = [];
+  for(let i=11;i>=0;i--){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    months.push({ key, y:d.getFullYear(), m:d.getMonth()+1, label:'T'+(d.getMonth()+1), thu:0, chi:0 });
+  }
+  const map = Object.fromEntries(months.map(x=>[x.key,x]));
+  (DAILY_CACHE.items||[]).forEach(it=>{
+    const slot = map[monthKeyFromISO(it.occurredAt)];
+    if(!slot) return;
+    const amt = Math.round(+it.amount||0);
+    if(!amt) return;
+    if(it.kind==='expense') slot.chi += amt;
+    else slot.thu += amt;
+  });
+  (S.jobs||[]).forEach(r=>{
+    if(!r[4] || r[8]) return;
+    const slot = map[monthKeyFromISO(r[5])];
+    if(!slot) return;
+    const amt = Math.round((+r[2]||0)-(+r[3]||0));
+    if(amt>0) slot.thu += amt;
+  });
+  return months;
+}
+function renderMonthlyChart(){
+  const host = $('ov-bars');
+  if(!host) return;
+  const months = buildMonthlyCashflow();
+  const totThu = months.reduce((s,x)=>s+x.thu,0);
+  const totChi = months.reduce((s,x)=>s+x.chi,0);
+  if($('ov-chart-thu')) $('ov-chart-thu').textContent = fmt(totThu);
+  if($('ov-chart-chi')) $('ov-chart-chi').textContent = fmt(totChi);
+  set('ov-chart-net', totThu-totChi, true);
+  if(!totThu && !totChi){
+    host.innerHTML = '<div class="ov-chart-empty">Chưa có thu / chi theo tháng — tick Đã thu hoặc upload bill.</div>';
+    return;
+  }
+  const peak = Math.max(1, ...months.flatMap(x=>[x.thu,x.chi]));
+  const now = new Date();
+  const nowKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  host.innerHTML = months.map(x=>{
+    const hIn = x.thu ? Math.max(4, Math.round(x.thu/peak*100)) : 0;
+    const hOut = x.chi ? Math.max(4, Math.round(x.chi/peak*100)) : 0;
+    return `<div class="ov-col${x.key===nowKey?' is-now':''}">
+      <div class="tip"><b>T${x.m}/${x.y}</b><span class="in">Thu ${fmtShort(x.thu)} ₫</span><span class="out">Chi ${fmtShort(x.chi)} ₫</span></div>
+      <div class="ov-col-pair">
+        <span class="ov-bar in" style="height:${hIn}%"></span>
+        <span class="ov-bar out" style="height:${hOut}%"></span>
+      </div>
+      <small>${esc(x.label)}</small>
+    </div>`;
+  }).join('');
+}
+
 /* ================= main calc ================= */
 function calc(){
   /* --- Bluescope: áp công thức rate card cho từng dòng --- */
@@ -6270,15 +6354,12 @@ function calc(){
   set('ov-receivable-job', jobChuaThu);
   set('ov-receivable-bs', sumBS);
   set('ov-cash-left', cashLeftFromReceivables, true);
-  set('ov-card-debt', totalDebt);
-  set('ov-bank-debt', loanOutstanding);
-  set('ov-bank-principal', landLoan.principalMonthly);
   const nextLoanDue = fullVnDate(loanNextDue(landLoan));
-  $('ov-bank-next').textContent = nextLoanDue;
   set('loan-detail-balance', loanOutstanding);
   set('loan-detail-principal', landLoan.principalMonthly);
-  $('loan-detail-rate').textContent = landLoan.annualRate.toLocaleString('vi-VN') + '%';
-  $('loan-detail-next').textContent = nextLoanDue;
+  if($('loan-detail-rate')) $('loan-detail-rate').textContent = landLoan.annualRate.toLocaleString('vi-VN') + '%';
+  if($('loan-detail-next')) $('loan-detail-next').textContent = nextLoanDue;
+  renderMonthlyChart();
 
   save();
 }
@@ -6871,7 +6952,6 @@ function isBluescopeHost(){
 })();
 /* ================= Hằng ngày + Gemini OCR ================= */
 const DAILY_KIND = { job:'Job linh tinh', income:'Đã thu', expense:'Đã chi' };
-let DAILY_CACHE = { items:[], totals:{ income:0, expense:0, job:0 } };
 function fileToBase64(file){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
@@ -6923,8 +7003,10 @@ async function loadDaily(){
       }
     }
     if(JVIEW === 'chi') renderChiPanel();
+    renderMonthlyChart();
   }catch(e){
     if(status){ status.hidden = false; status.textContent = 'Không tải được hằng ngày (API).'; }
+    renderMonthlyChart();
   }
 }
 function dailyMeta(item){
