@@ -2473,10 +2473,10 @@ body.public-mode #panel-bs-public{display:none!important}
 @media(max-width:820px){.daily-add{grid-template-columns:1fr 1fr}.daily-totals{grid-template-columns:1fr}}
 </style>
 </head>
-<body class="auth-locked">
-<script>if(location.hostname.toLowerCase().includes('bluescope')){document.body.classList.remove('auth-locked');document.body.classList.add('public-mode')}</script>
+<body>
+<script>if(location.hostname.toLowerCase().includes('bluescope')){document.body.classList.add('public-mode')}</script>
 
-<div class="auth-lock" id="auth-lock" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+<div class="auth-lock" id="auth-lock" hidden role="dialog" aria-modal="true" aria-labelledby="auth-title">
   <div class="auth-card">
     <div class="auth-logo">NT</div>
     <h2 id="auth-title">Khoá MONEY 2026</h2>
@@ -3061,48 +3061,10 @@ async function grantDeviceFromUrl(){
   return true;
 }
 async function ensureAccessUnlocked(){
-  const root = document.body;
+  document.body.classList.remove('auth-locked');
   const lock = $('auth-lock');
-  if(isBluescopePublicHost()){
-    root.classList.remove('auth-locked');
-    if(lock) lock.hidden = true;
-    return true;
-  }
-  try{ await grantDeviceFromUrl(); }catch(e){}
-  if(isTrustedDevice()){
-    root.classList.remove('auth-locked');
-    if(lock) lock.hidden = true;
-    return true;
-  }
-  root.classList.add('auth-locked');
-  if(lock) lock.hidden = false;
-  const input = $('auth-pass'), btn = $('auth-submit'), msg = $('auth-msg');
-  if(input) setTimeout(()=>input.focus(), 80);
-  return new Promise(resolve=>{
-    const submit = async ()=>{
-      if(!input || !btn) return;
-      btn.disabled = true;
-      if(msg) msg.textContent = '';
-      try{
-        const hash = await sha256Text(input.value.trim());
-        if(hash === ACCESS_LOCK.passHash){
-          trustThisDevice();
-          root.classList.remove('auth-locked');
-          if(lock) lock.hidden = true;
-          resolve(true);
-          return;
-        }
-        if(msg) msg.textContent = 'Sai pass. Máy này chưa được cấp quyền.';
-        input.select();
-      }catch(e){
-        if(msg) msg.textContent = 'Không thể kiểm tra pass trên trình duyệt này. Hãy mở bằng Chrome/Safari bản mới.';
-      }finally{
-        btn.disabled = false;
-      }
-    };
-    if(btn) btn.addEventListener('click', submit);
-    if(input) input.addEventListener('keydown', e=>{ if(e.key === 'Enter') submit(); });
-  });
+  if(lock) lock.hidden = true;
+  return true;
 }
 
 /* ================= state ================= */

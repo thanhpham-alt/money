@@ -84,22 +84,7 @@ export function AccessGate({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    (async () => {
-      // Bluescope domain: không cần lock
-      if (isBluescopeHost()) {
-        setState("unlocked");
-        return;
-      }
-      if (isTrustedFromStorage()) {
-        setState("unlocked");
-        return;
-      }
-      if (await tryGrantFromUrl()) {
-        setState("unlocked");
-        return;
-      }
-      setState("locked");
-    })();
+    setState("unlocked");
   }, []);
 
   const submit = async (e: React.FormEvent) => {
