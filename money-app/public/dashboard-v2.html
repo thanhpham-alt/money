@@ -446,9 +446,11 @@ input.locked:focus{box-shadow:none;border-color:var(--border)}
 .job-chi-bar .hint{font-size:12px;color:var(--faint)}
 .bill-modal-box{width:min(720px,96vw)}
 .bill-grid{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start}
-.bill-preview{border:1px solid var(--border);border-radius:12px;background:var(--bg2);overflow:hidden;min-height:220px;display:grid;place-items:center}
-.bill-preview img{max-width:100%;max-height:320px;object-fit:contain;display:block}
-.bill-preview .ph{padding:20px;color:var(--faint);text-align:center;font-size:13px}
+.bill-preview{border:1px dashed var(--border);border-radius:12px;background:var(--bg2);overflow:hidden;min-height:220px;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.bill-preview:hover,.bill-drop.drag{border-color:var(--accent);background:var(--accent-soft)}
+.bill-preview img{max-width:100%;max-height:320px;object-fit:contain;display:block;pointer-events:none}
+.bill-preview .ph{padding:20px;color:var(--faint);text-align:center;font-size:13px;line-height:1.45}
+.job-chi-panel.drag,.bill-modal-box.drag{outline:2px dashed var(--accent);outline-offset:-4px}
 .bill-fields{display:grid;gap:10px}
 .bill-fields label{display:grid;gap:4px;font-size:11px;font-weight:750;color:var(--faint);text-transform:uppercase;letter-spacing:.3px}
 .bill-fields input,.bill-fields select,.bill-fields textarea{
@@ -2721,7 +2723,7 @@ body.public-mode #panel-bs-public{display:none!important}
     </div>
     <input type="file" id="bill-file" accept="image/*" multiple hidden>
     <div class="bill-grid">
-      <div class="bill-preview" id="bill-preview"><div class="ph">Chọn ảnh chuyển khoản<br>OCR đọc ngày · số tiền · nội dung</div></div>
+      <div class="bill-preview" id="bill-preview"><div class="ph">Kéo thả ảnh vào đây<br>hoặc bấm để chọn file<br><small>OCR đọc ngày · số tiền · nội dung</small></div></div>
       <div class="bill-fields">
         <label>Ngày giao dịch
           <input type="date" id="bill-date">
@@ -7085,6 +7087,7 @@ function bindDaily(){
   });
   if($('bill-save')) $('bill-save').addEventListener('click', ()=> saveBillDraft().catch(e=>alert(e.message||'Không lưu được')));
   if($('bill-pick')) $('bill-pick').addEventListener('click', ()=> $('bill-file').click());
+  if($('bill-preview')) $('bill-preview').addEventListener('click', ()=> $('bill-file').click());
   const bindPicker = (fileId, btnId, statusId)=>{
     const file = $(fileId), upload = $(btnId);
     if(!file) return;
@@ -7095,8 +7098,32 @@ function bindDaily(){
       await startBillQueue(files, $(statusId), upload);
     });
   };
+  const enableBillDrop = (el, statusId)=>{
+    if(!el) return;
+    const onDrag = e=>{
+      if(![...e.dataTransfer.types].includes('Files')) return;
+      e.preventDefault(); e.stopPropagation();
+      el.classList.add('drag');
+    };
+    el.addEventListener('dragenter', onDrag);
+    el.addEventListener('dragover', onDrag);
+    el.addEventListener('dragleave', e=>{
+      if(e.target === el || !el.contains(e.relatedTarget)) el.classList.remove('drag');
+    });
+    el.addEventListener('drop', async e=>{
+      e.preventDefault(); e.stopPropagation();
+      el.classList.remove('drag');
+      const files = [...(e.dataTransfer.files||[])].filter(f=>String(f.type||'').startsWith('image/'));
+      if(!files.length){ alert('Thả ảnh bill / screenshot chuyển khoản.'); return; }
+      openBillTool();
+      await startBillQueue(files, $(statusId));
+    });
+  };
   bindPicker('bill-file', 'bill-pick', 'job-chi-status');
   bindPicker('job-chi-file', 'job-chi-upload', 'job-chi-status');
+  enableBillDrop($('bill-preview'), 'job-chi-status');
+  enableBillDrop($('bill-fold') && $('bill-fold').querySelector('.bill-modal-box'), 'job-chi-status');
+  enableBillDrop($('job-chi-panel'), 'job-chi-status');
   loadDaily();
 }
 
