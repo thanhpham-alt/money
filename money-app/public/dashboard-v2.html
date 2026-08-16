@@ -2270,7 +2270,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 }
 
 /* ============ OVERVIEW V3 — Tổng tiền + thu/chi theo tháng ============ */
-.ov-dashboard{display:grid;grid-template-columns:minmax(380px,1.05fr) minmax(360px,1.2fr);gap:10px;margin-bottom:10px;align-items:stretch}
+.ov-dashboard{display:grid;grid-template-columns:minmax(520px,1.4fr) minmax(280px,.9fr);gap:10px;margin-bottom:10px;align-items:stretch}
 .ov-card{min-width:0;margin:0;padding:13px 14px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow)}
 .ov-card-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;min-width:0}
 .ov-card-head>div{min-width:0}.ov-card-head small{display:block;color:var(--faint);font-size:8px;font-weight:750;
@@ -2292,7 +2292,12 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-hero-delta b.neg{color:#fecaca}.ov-hero-delta b.pos{color:#bbf7d0}
 .ov-hero-delta small{display:block;margin-top:4px;font-size:8.5px;color:rgba(255,255,255,.62);font-weight:650}
 .ov-hero-delta i{font-style:normal;font-weight:750}
-.ov-source-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.ov-hero-paid{margin-left:auto;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;
+  border-radius:8px;padding:4px 8px;font:inherit;text-align:right;cursor:pointer}
+.ov-hero-paid:hover{background:rgba(255,255,255,.18)}
+.ov-hero-paid span{display:block;font-size:8px;color:rgba(255,255,255,.7);font-weight:750;text-transform:uppercase}
+.ov-hero-paid b{display:block;margin-top:1px;font-size:11px;font-variant-numeric:tabular-nums}
+.ov-source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}
 .ov-source{min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 7px;border:1px solid rgba(255,255,255,.17);
   border-radius:8px;background:rgba(255,255,255,.1);color:#fff;font:inherit;text-align:left;cursor:pointer;transition:.15s}
 .ov-source:hover{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.35)}
@@ -2320,7 +2325,7 @@ td.auto .plain{background:var(--accent-soft);border-color:transparent;color:var(
 .ov-chart-totals b{display:block;margin-top:2px;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ov-chart-thu{color:var(--green)}#ov-chart-chi{color:var(--red)}
 #ov-chart-net.pos{color:var(--green)}#ov-chart-net.neg{color:var(--red)}
-.ov-bars{display:flex;align-items:stretch;gap:3px;flex:1;min-height:132px;padding:2px 0 0}
+.ov-bars{display:flex;align-items:stretch;gap:3px;flex:1;min-height:112px;padding:2px 0 0}
 .ov-col{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px}
 .ov-col-pair{flex:1;width:100%;display:flex;align-items:flex-end;justify-content:center;gap:2px;min-height:0}
 .ov-bar{display:block;width:46%;max-width:14px;min-height:0;border-radius:3px 3px 1px 1px}
@@ -2610,7 +2615,10 @@ body.public-mode #panel-bs-public{display:none!important}
     <section class="ov-card ov-income-card">
       <div class="ov-hero">
         <div class="ov-hero-main">
-          <div class="ov-card-head"><span class="ov-card-icon">TT</span><div><h2>Tổng tiền</h2></div></div>
+          <div class="ov-card-head">
+            <span class="ov-card-icon">TT</span><div><h2>Tổng tiền</h2></div>
+            <button type="button" class="ov-hero-paid" data-job-view="roi"><span>Đã thu job</span><b id="ov-job-paid">0 ₫</b></button>
+          </div>
           <b class="ov-main-value" id="ov-receivable-total">0 ₫</b>
         </div>
         <button type="button" class="ov-hero-delta" data-open="debt-fold" title="Tổng tiền trừ tổng nợ">
@@ -2621,7 +2629,6 @@ body.public-mode #panel-bs-public{display:none!important}
       </div>
       <div class="ov-source-grid">
         <button type="button" class="ov-source" data-goto="pro"><span>Production</span><b id="ov-receivable-pro">0 ₫</b></button>
-        <button type="button" class="ov-source" data-job-view="roi"><span>Thu từ Job</span><b id="ov-job-paid">0 ₫</b></button>
         <button type="button" class="ov-source" data-job-view="chua" data-scroll="job-body"><span>Job còn thu</span><b id="ov-receivable-job">0 ₫</b></button>
         <button type="button" class="ov-source" data-goto="bluescope"><span>Bluescope</span><b id="ov-receivable-bs">0 ₫</b></button>
         <label class="ov-source is-static"><span>Tiền hiện còn</span><input type="text" class="money ov-cash-input" id="v_h3" value="37000000" placeholder="0"></label>
@@ -6096,6 +6103,7 @@ function monthKeyFromISO(iso){
 }
 function buildMonthlyCashflow(){
   const now = new Date();
+  const fallbackKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
   const months = [];
   for(let i=11;i>=0;i--){
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
@@ -6103,20 +6111,21 @@ function buildMonthlyCashflow(){
     months.push({ key, y:d.getFullYear(), m:d.getMonth()+1, label:'T'+(d.getMonth()+1), thu:0, chi:0 });
   }
   const map = Object.fromEntries(months.map(x=>[x.key,x]));
+  const jobDailyIds = new Set((S.jobs||[]).map(r=>r[8]).filter(Boolean));
+  (S.jobs||[]).forEach(r=>{
+    if(!r[4]) return;
+    const slot = map[monthKeyFromISO(r[5])] || map[fallbackKey];
+    if(!slot) return;
+    const amt = Math.round((+r[2]||0)-(+r[3]||0));
+    if(amt>0) slot.thu += amt;
+  });
   (DAILY_CACHE.items||[]).forEach(it=>{
     const slot = map[monthKeyFromISO(it.occurredAt)];
     if(!slot) return;
     const amt = Math.round(+it.amount||0);
     if(!amt) return;
     if(it.kind==='expense') slot.chi += amt;
-    else slot.thu += amt;
-  });
-  (S.jobs||[]).forEach(r=>{
-    if(!r[4] || r[8]) return;
-    const slot = map[monthKeyFromISO(r[5])];
-    if(!slot) return;
-    const amt = Math.round((+r[2]||0)-(+r[3]||0));
-    if(amt>0) slot.thu += amt;
+    else if(!jobDailyIds.has(it.id)) slot.thu += amt;
   });
   return months;
 }
@@ -7048,6 +7057,11 @@ function dailyPosted(item){
   return String(item.note||'').includes('__cash:1');
 }
 function renderChiPanel(){
+  if(DAILY_INFLIGHT && !(DAILY_CACHE.items||[]).length){
+    if($('job-chi-status')){ $('job-chi-status').hidden = false; $('job-chi-status').textContent = 'Đang tải khoản chi…'; }
+    if($('job-chi-list')){ $('job-chi-list').hidden = true; $('job-chi-list').innerHTML = ''; }
+    return;
+  }
   const items = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense');
   if($('jt-n-chi')) $('jt-n-chi').textContent = items.length;
   const empty = renderDailyRows($('job-chi-list'), items, 'Chưa có khoản đã chi — upload ảnh chuyển khoản.');
@@ -7056,32 +7070,26 @@ function renderChiPanel(){
     if(empty) $('job-chi-status').textContent = empty;
   }
 }
-async function loadDaily(){
-  const status = $('daily-status'), list = $('daily-list');
-  try{
-    const res = await fetch('/api/daily-expenses?t=' + Date.now(), { cache:'no-store' });
-    const json = await res.json();
-    DAILY_CACHE = { items: json.items || [], totals: json.totals || { income:0, expense:0, job:0 } };
-    const totals = DAILY_CACHE.totals;
-    if($('daily-tot-job')) $('daily-tot-job').textContent = fmt(totals.job||0);
-    if($('daily-tot-in')) $('daily-tot-in').textContent = fmt(totals.income||0);
-    if($('daily-tot-out')) $('daily-tot-out').textContent = fmt(totals.expense||0);
-    if($('jt-n-chi')) $('jt-n-chi').textContent = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense').length;
-    if(status && list){
-      if(!DAILY_CACHE.items.length){
-        status.hidden = false; status.textContent = 'Chưa có ghi chép — thêm dòng hoặc upload bill.';
-        list.hidden = true; list.innerHTML = '';
-      }else{
-        status.hidden = true;
-        renderDailyRows(list, DAILY_CACHE.items, '');
-      }
+let DAILY_INFLIGHT = null;
+async function loadDaily(force){
+  if(DAILY_INFLIGHT && !force) return DAILY_INFLIGHT;
+  DAILY_INFLIGHT = (async ()=>{
+    try{
+      const from = new Date();
+      from.setMonth(from.getMonth()-18);
+      const qs = 'from=' + from.toISOString().slice(0,10) + '&t=' + Date.now();
+      const res = await fetch('/api/daily-expenses?' + qs, { cache:'no-store' });
+      const json = await res.json();
+      DAILY_CACHE = { items: json.items || [], totals: json.totals || { income:0, expense:0, job:0 } };
+      const nChi = (DAILY_CACHE.items||[]).filter(it=>it.kind==='expense').length;
+      if($('jt-n-chi')) $('jt-n-chi').textContent = nChi;
+      if(JVIEW === 'chi') renderChiPanel();
+      renderMonthlyChart();
+    }catch(e){
+      renderMonthlyChart();
     }
-    if(JVIEW === 'chi') renderChiPanel();
-    renderMonthlyChart();
-  }catch(e){
-    if(status){ status.hidden = false; status.textContent = 'Không tải được hằng ngày (API).'; }
-    renderMonthlyChart();
-  }
+  })();
+  try{ await DAILY_INFLIGHT; } finally { DAILY_INFLIGHT = null; }
 }
 function dailyMeta(item){
   try{
@@ -7108,46 +7116,41 @@ function renderDailyRows(host, items, emptyText){
     return emptyText;
   }
   host.hidden = false;
-  const groups = new Map();
-  items.forEach(it=>{
-    const day = String(it.occurredAt||'').slice(0,10);
-    if(!groups.has(day)) groups.set(day, []);
-    groups.get(day).push(it);
-  });
-  host.innerHTML = [...groups.entries()].map(([day, rows])=>{
-    const label = day ? new Date(day+'T00:00:00').toLocaleDateString('vi-VN', {
-      weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'
-    }) : '—';
-    return rows.map(it=>{
-      const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
-      const sign = it.kind==='expense' ? '−' : '+';
-      const meta = dailyMeta(it);
-      const shown = dailyDisplay(it, meta);
-      const tip = [shown.title, shown.memo].filter(Boolean).join(' · ') || shown.fallback;
-      return `<div class="daily-row">
-        <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
-        <div class="desc" title="${esc(tip)}">
-          <span class="when">${esc(formatDailyWhen(it.occurredAt, meta))}</span>
-          ${shown.stk ? `<span class="sep">·</span><span class="stk">STK ${esc(shown.stk)}</span>` : ''}
-          ${shown.title ? `<span class="sep">·</span><span class="ttl">${esc(shown.title)}</span>` : ''}
-          ${shown.memo ? `<span class="sep">·</span><span class="nd">${esc(shown.memo)}</span>` : (!shown.title ? `<span class="sep">·</span><span class="nd">${esc(shown.fallback)}</span>` : '')}
-        </div>
-        <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
-        <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
-      </div>`;
-    }).join('');
-  }).join('');
-  host.querySelectorAll('[data-daily-del]').forEach(btn=>{
-    btn.addEventListener('click', async ()=>{
+  let html = '';
+  for(let i=0;i<items.length;i++){
+    const it = items[i];
+    const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
+    const sign = it.kind==='expense' ? '−' : '+';
+    const meta = dailyMeta(it);
+    const shown = dailyDisplay(it, meta);
+    const tip = shown.title && shown.memo ? (shown.title + ' · ' + shown.memo) : (shown.title || shown.memo || shown.fallback);
+    html += `<div class="daily-row">
+      <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
+      <div class="desc" title="${esc(tip)}">
+        <span class="when">${esc(formatDailyWhen(it.occurredAt, meta))}</span>
+        ${shown.stk ? `<span class="sep">·</span><span class="stk">STK ${esc(shown.stk)}</span>` : ''}
+        ${shown.title ? `<span class="sep">·</span><span class="ttl">${esc(shown.title)}</span>` : ''}
+        ${shown.memo ? `<span class="sep">·</span><span class="nd">${esc(shown.memo)}</span>` : (!shown.title ? `<span class="sep">·</span><span class="nd">${esc(shown.fallback)}</span>` : '')}
+      </div>
+      <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
+      <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
+    </div>`;
+  }
+  host.innerHTML = html;
+  if(!host.dataset.delBound){
+    host.dataset.delBound = '1';
+    host.addEventListener('click', async e=>{
+      const btn = e.target.closest('[data-daily-del]');
+      if(!btn) return;
       if(!confirm('Xoá dòng này? Tiền hiện có sẽ hoàn lại.')) return;
       const id = btn.dataset.dailyDel;
       const item = (DAILY_CACHE.items||[]).find(x=>x.id===id);
       const res = await fetch('/api/daily-expenses?id=' + encodeURIComponent(id), { method:'DELETE' });
       if(!res.ok){ alert('Không xoá được'); return; }
       if(item && dailyPosted(item)) applyDailyCash(item, -1);
-      loadDaily();
+      loadDaily(true);
     });
-  });
+  }
   return '';
 }
 async function collectJob(i){
@@ -7213,7 +7216,7 @@ async function addDaily(payload){
   if(!res.ok) throw new Error('save failed');
   const saved = await res.json();
   if(!payload.skipCash) applyDailyCash(saved, 1);
-  await loadDaily();
+  await loadDaily(true);
   return saved;
 }
 let BILL_QUEUE = [];

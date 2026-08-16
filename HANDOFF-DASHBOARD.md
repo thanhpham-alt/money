@@ -78,10 +78,10 @@ Nhớ tab: `localStorage['money2026_last_tab']`. Reload không được nhảy v
 Nút: **Bill** · **Tất toán đất** · **Freelancer** · **Tổng nợ** (modal nợ thẻ, không còn card trên overview).
 
 ### Tổng quan
-- Card **Tổng tiền** (tím): Production thu về + Job còn thu + Bluescope + tiền hiện còn (`#v_h3`).
+- Card **Tổng tiền** (tím): 4 ô cộng đúng tổng — Production + Job còn thu + Bluescope + tiền hiện còn (`#v_h3`).
+- **Đã thu job** là chip trên tiêu đề (không cộng vào Tổng tiền — đã nằm trong tiền mặt).
 - Cạnh phải: **Chênh lệch với nợ** = Tổng tiền − `totalDebt` (nợ thẻ + khoản phải trả + lãi tháng). **Không** trừ gốc vay Shinhan.
-- 5 ô: Production · Thu từ Job · Job còn thu · Bluescope · Tiền hiện còn. Bấm Chênh lệch mở modal nợ.
-- Card **Thu / chi theo tháng**: 12 tháng, cột xanh/đỏ. Nguồn = `DailyExpense` + job đã thu chưa có bản ghi daily (`job[8]` trống).
+- Card **Thu / chi theo tháng**: Thu = job đã tick theo ngày thanh toán; Chi = bill DailyExpense. Không bỏ job chỉ vì đã có `job[8]`.
 
 Đã **bỏ** card Tổng nợ và card Shinhan trên overview. Shinhan vẫn trong **Tất toán đất**.
 

@@ -25,9 +25,27 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (!from && !to) {
+    const start = new Date();
+    start.setMonth(start.getMonth() - 18);
+    start.setHours(0, 0, 0, 0);
+    where.occurredAt = { gte: start };
+  }
+
   const items = await prisma.dailyExpense.findMany({
     where,
     orderBy: [{ occurredAt: "desc" }, { createdAt: "desc" }],
+    take: 400,
+    select: {
+      id: true,
+      occurredAt: true,
+      kind: true,
+      amount: true,
+      description: true,
+      note: true,
+      bank: true,
+      bankRef: true,
+    },
   });
 
   const totals = items.reduce(
