@@ -466,6 +466,7 @@ input.locked:focus{box-shadow:none;border-color:var(--border)}
 .bill-mob-cash span{font-size:11px;font-weight:750;text-transform:uppercase}
 .bill-mob-cash b{display:block;margin-top:2px;font-size:20px;font-variant-numeric:tabular-nums;color:var(--text)}
 @media(max-width:720px){.bill-grid{grid-template-columns:1fr}}
+.bill-mob-upload{display:none}
 body.mobile-bill{background:var(--bg)}
 body.mobile-bill header.admin-header,
 body.mobile-bill header.public-header,
@@ -479,15 +480,42 @@ body.auth-locked.mobile-bill #bill-fold{display:block!important}
 body.mobile-bill #bill-fold,
 body.mobile-bill #bill-fold[hidden]{
   display:block!important;position:relative!important;inset:auto!important;background:transparent!important;
-  padding:12px 12px 28px;z-index:1;min-height:100vh
+  padding:14px 16px calc(88px + env(safe-area-inset-bottom,8px));z-index:1;min-height:100vh
 }
 body.mobile-bill #bill-fold .bill-modal-box{
   width:100%;max-width:560px;margin:0 auto;border:0;box-shadow:none;border-radius:0;padding:0
 }
-body.mobile-bill #bill-fold [data-close]{display:none!important}
-body.mobile-bill .bill-mob-cash{display:block}
-body.mobile-bill .bill-preview{min-height:180px}
-body.mobile-bill .bill-actions{position:sticky;bottom:0;padding-bottom:env(safe-area-inset-bottom,8px);background:var(--card)}
+body.mobile-bill #bill-fold .modal-head,
+body.mobile-bill #bill-fold [data-close],
+body.mobile-bill .bill-adv,
+body.mobile-bill #bill-cam,
+body.mobile-bill #bill-pick{display:none!important}
+body.mobile-bill .bill-mob-cash{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin:0 0 12px;padding:12px 14px;border-radius:14px
+}
+body.mobile-bill .bill-mob-cash b{margin:0;font-size:18px}
+body.mobile-bill .bill-mob-upload{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+body.mobile-bill .bill-up{
+  height:52px;border:1px solid var(--border);border-radius:14px;background:var(--card);
+  color:var(--text);font:inherit;font-size:15px;font-weight:750;cursor:pointer
+}
+body.mobile-bill .bill-up.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+body.mobile-bill .bill-mob-status{margin:-4px 0 12px;padding:8px 12px;border-radius:10px;background:var(--bg2);color:var(--sub);font-size:13px;font-weight:650}
+body.mobile-bill .bill-preview{display:none;min-height:0;max-height:88px;margin:0 0 12px}
+body.mobile-bill .bill-preview:has(img){display:grid}
+body.mobile-bill .bill-preview img{max-height:88px;width:100%;object-fit:contain}
+body.mobile-bill .bill-fields{gap:8px}
+body.mobile-bill .bill-fields label{font-size:10px;letter-spacing:.25px}
+body.mobile-bill .bill-fields input,
+body.mobile-bill .bill-fields select,
+body.mobile-bill .bill-fields textarea{padding:11px 12px;font-size:16px;border-radius:12px}
+body.mobile-bill .bill-fields textarea{min-height:56px}
+body.mobile-bill .bill-actions{
+  position:fixed;left:0;right:0;bottom:0;z-index:5;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,8px));
+  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px)
+}
+body.mobile-bill #bill-save{width:100%;height:50px;border:0;border-radius:14px;font-size:16px;font-weight:800}
 .jt-sum{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 .job-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
 .job-table th.sortable:hover{color:var(--accent)}
@@ -2808,38 +2836,43 @@ body.public-mode #panel-bs-public{display:none!important}
       <button class="rowbtn" data-close>✕</button>
     </div>
     <div class="bill-mob-cash" id="bill-mob-cash"><span>Tiền hiện có</span><b id="bill-mob-cash-val">—</b></div>
+    <div class="bill-mob-upload">
+      <button class="bill-up" type="button" id="bill-cam-m">Chụp ảnh</button>
+      <button class="bill-up primary" type="button" id="bill-pick-m">Chọn ảnh</button>
+    </div>
+    <div class="bill-mob-status" id="bill-mob-status" hidden></div>
     <input type="file" id="bill-file" accept="image/*" multiple hidden>
     <input type="file" id="bill-file-cam" accept="image/*" capture="environment" hidden>
     <div class="bill-grid">
       <div class="bill-preview" id="bill-preview"><div class="ph">Kéo thả ảnh vào đây<br>hoặc bấm để chọn file<br><small>OCR đọc ngày · số tiền · nội dung</small></div></div>
       <div class="bill-fields">
         <div class="split2">
-          <label>Ngày giao dịch<input type="date" id="bill-date"></label>
+          <label>Ngày<input type="date" id="bill-date"></label>
           <label>Giờ<input type="time" id="bill-time"></label>
         </div>
         <label>Số tiền
           <input type="text" class="money" id="bill-amount" placeholder="250.000">
         </label>
-        <label>Tiêu đề hạn mục
-          <input type="text" id="bill-title" placeholder="Lê Thị Khương · trả lương" autocomplete="off">
+        <label>Tiêu đề
+          <input type="text" id="bill-title" placeholder="Người nhận / việc chi" autocomplete="off">
         </label>
-        <label>Người nhận / gửi
+        <label>Người nhận
           <input type="text" id="bill-person" placeholder="NGUYEN THI THUY NHI" autocomplete="off">
         </label>
-        <label>Nội dung chuyển khoản
-          <textarea id="bill-desc" placeholder="Nhat Thanh chuyen khoan nhanh qua Zalo" autocomplete="off"></textarea>
+        <label>Nội dung CK
+          <textarea id="bill-desc" placeholder="Lời nhắn chuyển khoản" autocomplete="off"></textarea>
         </label>
         <label>Loại
           <select id="bill-kind">
-            <option value="expense">Đã chi — trừ tiền hiện có</option>
-            <option value="income">Đã thu — cộng tiền hiện có</option>
+            <option value="expense">Đã chi — trừ tiền</option>
+            <option value="income">Đã thu — cộng tiền</option>
           </select>
         </label>
-        <div class="split2">
+        <div class="split2 bill-adv">
           <label>Ngân hàng<input type="text" id="bill-bank" placeholder="TCB"></label>
           <label>Mã GD<input type="text" id="bill-ref" placeholder="FT…"></label>
         </div>
-        <div class="bill-cash" id="bill-cash"><span>Tiền hiện có sau khi ghi</span><b>—</b></div>
+        <div class="bill-cash bill-adv" id="bill-cash"><span>Tiền hiện có sau khi ghi</span><b>—</b></div>
       </div>
     </div>
     <div class="bill-actions">
@@ -7443,6 +7476,7 @@ async function startBillQueue(files, statusEl, btn){
   const label = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc bill…'; }
   if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Đang OCR ảnh…'; }
+  if($('bill-mob-status')){ $('bill-mob-status').hidden = false; $('bill-mob-status').textContent = 'Đang đọc ảnh…'; }
   try{
     const first = list[0];
     const ocr = await ocrOneBill(first);
@@ -7454,6 +7488,7 @@ async function startBillQueue(files, statusEl, btn){
     if(statusEl) statusEl.textContent = BILL_QUEUE.length
       ? `Đã đọc 1 ảnh · còn ${BILL_QUEUE.length} ảnh chờ xác nhận`
       : 'Kiểm tra ngày / số tiền / nội dung rồi bấm Ghi';
+    if($('bill-mob-status')) $('bill-mob-status').textContent = 'Đã đọc ảnh — kiểm tra rồi Ghi';
   }catch(err){
     alert(err.message || 'Không đọc được bill.');
   }finally{
@@ -7469,6 +7504,10 @@ async function saveBillDraft(){
   if(status){
     status.hidden = false;
     status.textContent = `Đã ghi ${fmt(saved.amount)} · ${saved.description} — ${saved.kind==='income'?'cộng':'trừ'} Tiền hiện có`;
+  }
+  if($('bill-mob-status')){
+    $('bill-mob-status').hidden = false;
+    $('bill-mob-status').textContent = `Đã ghi ${fmt(saved.amount)}`;
   }
   if(BILL_QUEUE.length){
     const next = BILL_QUEUE.shift();
@@ -7497,6 +7536,8 @@ function bindDaily(){
   if($('bill-save')) $('bill-save').addEventListener('click', ()=> saveBillDraft().catch(e=>alert(e.message||'Không lưu được')));
   if($('bill-pick')) $('bill-pick').addEventListener('click', ()=> $('bill-file').click());
   if($('bill-cam')) $('bill-cam').addEventListener('click', ()=> $('bill-file-cam').click());
+  if($('bill-pick-m')) $('bill-pick-m').addEventListener('click', ()=> $('bill-file').click());
+  if($('bill-cam-m')) $('bill-cam-m').addEventListener('click', ()=> $('bill-file-cam').click());
   if($('bill-preview')) $('bill-preview').addEventListener('click', ()=> $('bill-file').click());
   const bindPicker = (fileId, btnId, statusId)=>{
     const file = $(fileId), upload = $(btnId);
