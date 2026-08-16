@@ -480,42 +480,37 @@ body.auth-locked.mobile-bill #bill-fold{display:block!important}
 body.mobile-bill #bill-fold,
 body.mobile-bill #bill-fold[hidden]{
   display:block!important;position:relative!important;inset:auto!important;background:transparent!important;
-  padding:14px 16px calc(88px + env(safe-area-inset-bottom,8px));z-index:1;min-height:100vh
+  padding:20px 20px calc(24px + env(safe-area-inset-bottom,8px));z-index:1;min-height:100vh
 }
 body.mobile-bill #bill-fold .bill-modal-box{
-  width:100%;max-width:560px;margin:0 auto;border:0;box-shadow:none;border-radius:0;padding:0
+  width:100%;max-width:420px;margin:0 auto;border:0;box-shadow:none;border-radius:0;padding:0;
+  display:flex;flex-direction:column;gap:12px;min-height:calc(100vh - 48px);justify-content:center
 }
 body.mobile-bill #bill-fold .modal-head,
 body.mobile-bill #bill-fold [data-close],
 body.mobile-bill .bill-adv,
 body.mobile-bill #bill-cam,
-body.mobile-bill #bill-pick{display:none!important}
-body.mobile-bill .bill-mob-cash{
-  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  margin:0 0 12px;padding:12px 14px;border-radius:14px
+body.mobile-bill #bill-pick,
+body.mobile-bill #bill-cam-m,
+body.mobile-bill .bill-mob-cash,
+body.mobile-bill .bill-mob-status,
+body.mobile-bill .bill-grid,
+body.mobile-bill .bill-preview,
+body.mobile-bill .bill-fields{display:none!important}
+body.mobile-bill #bill-cash{
+  display:block!important;order:-1;margin:0 0 8px;padding:18px 16px;border-radius:18px;
+  background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,var(--border))
 }
-body.mobile-bill .bill-mob-cash b{margin:0;font-size:18px}
-body.mobile-bill .bill-mob-upload{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+body.mobile-bill #bill-cash span{font-size:11px;color:var(--accent)}
+body.mobile-bill #bill-cash b{margin-top:6px;font-size:28px;color:var(--text)}
+body.mobile-bill .bill-mob-upload{display:block;margin:0}
 body.mobile-bill .bill-up{
-  height:52px;border:1px solid var(--border);border-radius:14px;background:var(--card);
-  color:var(--text);font:inherit;font-size:15px;font-weight:750;cursor:pointer
+  width:100%;height:56px;border:1px solid var(--border);border-radius:16px;background:var(--card);
+  color:var(--text);font:inherit;font-size:17px;font-weight:800;cursor:pointer
 }
-body.mobile-bill .bill-up.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-body.mobile-bill .bill-mob-status{margin:-4px 0 12px;padding:8px 12px;border-radius:10px;background:var(--bg2);color:var(--sub);font-size:13px;font-weight:650}
-body.mobile-bill .bill-preview{display:none;min-height:0;max-height:88px;margin:0 0 12px}
-body.mobile-bill .bill-preview:has(img){display:grid}
-body.mobile-bill .bill-preview img{max-height:88px;width:100%;object-fit:contain}
-body.mobile-bill .bill-fields{gap:8px}
-body.mobile-bill .bill-fields label{font-size:10px;letter-spacing:.25px}
-body.mobile-bill .bill-fields input,
-body.mobile-bill .bill-fields select,
-body.mobile-bill .bill-fields textarea{padding:11px 12px;font-size:16px;border-radius:12px}
-body.mobile-bill .bill-fields textarea{min-height:56px}
-body.mobile-bill .bill-actions{
-  position:fixed;left:0;right:0;bottom:0;z-index:5;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,8px));
-  background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px)
-}
-body.mobile-bill #bill-save{width:100%;height:50px;border:0;border-radius:14px;font-size:16px;font-weight:800}
+body.mobile-bill .bill-up.primary{background:var(--card);border-color:var(--border);color:var(--text)}
+body.mobile-bill .bill-actions{position:static;margin:0;padding:0;background:transparent}
+body.mobile-bill #bill-save{width:100%;height:56px;border:0;border-radius:16px;font-size:17px;font-weight:800}
 .jt-sum{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 .job-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
 .job-table th.sortable:hover{color:var(--accent)}
@@ -2844,10 +2839,8 @@ body.public-mode #panel-bs-public{display:none!important}
     </div>
     <div class="bill-mob-cash" id="bill-mob-cash"><span>Tiền hiện có</span><b id="bill-mob-cash-val">—</b></div>
     <div class="bill-mob-upload">
-      <button class="bill-up" type="button" id="bill-cam-m">Chụp ảnh</button>
-      <button class="bill-up primary" type="button" id="bill-pick-m">Chọn ảnh</button>
+      <button class="bill-up primary" type="button" id="bill-pick-m">Upload</button>
     </div>
-    <div class="bill-mob-status" id="bill-mob-status" hidden></div>
     <input type="file" id="bill-file" accept="image/*" multiple hidden>
     <input type="file" id="bill-file-cam" accept="image/*" capture="environment" hidden>
     <div class="bill-grid">
@@ -2879,14 +2872,14 @@ body.public-mode #panel-bs-public{display:none!important}
           <label>Ngân hàng<input type="text" id="bill-bank" placeholder="TCB"></label>
           <label>Mã GD<input type="text" id="bill-ref" placeholder="FT…"></label>
         </div>
-        <div class="bill-cash bill-adv" id="bill-cash"><span>Tiền hiện có sau khi ghi</span><b>—</b></div>
       </div>
     </div>
+    <div class="bill-cash" id="bill-cash"><span>Tiền hiện có sau trừ</span><b>—</b></div>
     <div class="bill-actions">
       <button class="iconbtn" type="button" id="bill-cam">Chụp ảnh</button>
       <button class="iconbtn" type="button" id="bill-pick">Chọn ảnh</button>
       <button class="iconbtn" type="button" data-close>Huỷ</button>
-      <button class="qa-save" type="button" id="bill-save">Ghi &amp; trừ tiền</button>
+      <button class="qa-save" type="button" id="bill-save">Ghi và trừ tiền</button>
     </div>
   </div>
 </div>
@@ -7004,6 +6997,18 @@ function isBluescopeHost(){
     setTimeout(openDataRescue, 100);
   }
 
+  if(isMobileBillMode()){
+    document.body.classList.add('mobile-bill');
+    bindDaily();
+    openBillTool();
+    paintBillCash();
+    pullStateFromServer().then(pulled=>{
+      if(pulled === 'reload'){ location.reload(); return; }
+      paintBillCash();
+    }).catch(()=>{});
+    return;
+  }
+
   const pulled = await pullStateFromServer();
   if(pulled === 'reload'){ location.reload(); return; }
 
@@ -7023,13 +7028,6 @@ function isBluescopeHost(){
   }
 
   if(await ensureDeploySeed()) return; /* reload sau seed */
-  if(isMobileBillMode()){
-    document.body.classList.add('mobile-bill');
-    bindDaily();
-    openBillTool();
-    paintBillCash();
-    return;
-  }
   bindDaily();
   routeFromHash();
 })();
@@ -7216,7 +7214,7 @@ async function addDaily(payload){
   if(!res.ok) throw new Error('save failed');
   const saved = await res.json();
   if(!payload.skipCash) applyDailyCash(saved, 1);
-  await loadDaily(true);
+  if(!document.body.classList.contains('mobile-bill')) await loadDaily(true);
   return saved;
 }
 let BILL_QUEUE = [];
@@ -7244,12 +7242,14 @@ function paintBillCash(){
   const now = money('v_h3');
   const next = d.kind === 'income' ? now + d.amount : now - d.amount;
   box.className = 'bill-cash ' + (d.kind === 'income' ? 'pos' : 'neg');
-  box.querySelector('span').textContent = d.kind === 'income'
-    ? 'Tiền hiện có sau khi cộng'
-    : 'Tiền hiện có sau khi trừ';
-  box.querySelector('b').textContent = fmt(next) + '   (' + (d.kind==='income'?'+':'−') + fmt(d.amount) + ')';
+  box.querySelector('span').textContent = document.body.classList.contains('mobile-bill')
+    ? 'Tiền hiện có sau trừ'
+    : (d.kind === 'income' ? 'Tiền hiện có sau khi cộng' : 'Tiền hiện có sau trừ');
+  box.querySelector('b').textContent = document.body.classList.contains('mobile-bill')
+    ? fmt(next)
+    : (fmt(next) + '   (' + (d.kind==='income'?'+':'−') + fmt(d.amount) + ')');
   const saveBtn = $('bill-save');
-  if(saveBtn) saveBtn.textContent = d.kind === 'income' ? 'Ghi & cộng tiền' : 'Ghi & trừ tiền';
+  if(saveBtn) saveBtn.textContent = d.kind === 'income' ? 'Ghi và cộng tiền' : 'Ghi và trừ tiền';
   if($('bill-mob-cash-val')) $('bill-mob-cash-val').textContent = fmt(money('v_h3'));
 }
 function setBillField(id, value){
@@ -7458,8 +7458,9 @@ async function loadTesseract(){
     });
   }
   if(!TESS_WORKER){
+    const lang = document.body.classList.contains('mobile-bill') ? 'eng' : 'vie+eng';
     try{
-      TESS_WORKER = await window.Tesseract.createWorker('vie+eng', 1);
+      TESS_WORKER = await window.Tesseract.createWorker(lang, 1);
     }catch(e){
       TESS_WORKER = await window.Tesseract.createWorker('eng', 1);
     }
@@ -7479,7 +7480,7 @@ async function startBillQueue(files, statusEl, btn){
   const label = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc bill…'; }
   if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Đang OCR ảnh…'; }
-  if($('bill-mob-status')){ $('bill-mob-status').hidden = false; $('bill-mob-status').textContent = 'Đang đọc ảnh…'; }
+  if($('bill-pick-m')){ $('bill-pick-m').disabled = true; $('bill-pick-m').textContent = 'Đang đọc…'; }
   try{
     const first = list[0];
     const ocr = await ocrOneBill(first);
@@ -7491,7 +7492,7 @@ async function startBillQueue(files, statusEl, btn){
     if(statusEl) statusEl.textContent = BILL_QUEUE.length
       ? `Đã đọc 1 ảnh · còn ${BILL_QUEUE.length} ảnh chờ xác nhận`
       : 'Kiểm tra ngày / số tiền / nội dung rồi bấm Ghi';
-    if($('bill-mob-status')) $('bill-mob-status').textContent = 'Đã đọc ảnh — kiểm tra rồi Ghi';
+    if($('bill-pick-m')){ $('bill-pick-m').disabled = false; $('bill-pick-m').textContent = 'Upload'; }
   }catch(err){
     alert(err.message || 'Không đọc được bill.');
   }finally{
@@ -7500,9 +7501,19 @@ async function startBillQueue(files, statusEl, btn){
 }
 async function saveBillDraft(){
   const d = billDraft();
-  if(!d.amount){ $('bill-amount').focus(); return; }
+  if(!d.amount){
+    if(document.body.classList.contains('mobile-bill')){ alert('Chưa đọc được số tiền. Upload lại ảnh.'); return; }
+    $('bill-amount').focus(); return;
+  }
   if(!d.description){ $('bill-desc').focus(); return; }
   const saved = await addDaily({ ...d, source:'ocr' });
+  if(document.body.classList.contains('mobile-bill')){
+    setBillField('bill-amount', '');
+    setBillField('bill-title', '');
+    setBillField('bill-person', '');
+    setBillField('bill-desc', '');
+    paintBillCash();
+  }
   const status = $('job-chi-status');
   if(status){
     status.hidden = false;
@@ -7540,7 +7551,6 @@ function bindDaily(){
   if($('bill-pick')) $('bill-pick').addEventListener('click', ()=> $('bill-file').click());
   if($('bill-cam')) $('bill-cam').addEventListener('click', ()=> $('bill-file-cam').click());
   if($('bill-pick-m')) $('bill-pick-m').addEventListener('click', ()=> $('bill-file').click());
-  if($('bill-cam-m')) $('bill-cam-m').addEventListener('click', ()=> $('bill-file-cam').click());
   if($('bill-preview')) $('bill-preview').addEventListener('click', ()=> $('bill-file').click());
   const bindPicker = (fileId, btnId, statusId)=>{
     const file = $(fileId), upload = $(btnId);
@@ -7579,7 +7589,7 @@ function bindDaily(){
   enableBillDrop($('bill-preview'), 'job-chi-status');
   enableBillDrop($('bill-fold') && $('bill-fold').querySelector('.bill-modal-box'), 'job-chi-status');
   enableBillDrop($('job-chi-panel'), 'job-chi-status');
-  loadDaily();
+  if(!document.body.classList.contains('mobile-bill')) loadDaily();
 }
 
 /* nút Nạp Excel trên đầu bảng Job */
