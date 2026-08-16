@@ -2497,7 +2497,8 @@ body.public-mode #panel-bs-public{display:none!important}
 .daily-row .desc .sep{color:var(--faint);margin:0 7px}
 .daily-row .desc .when{color:var(--sub);font-weight:650;font-variant-numeric:tabular-nums}
 .daily-row .desc .stk{color:var(--text);font-weight:650}
-.daily-row .desc .nd{color:var(--text)}
+.daily-row .desc .ttl{color:var(--text);font-weight:750}
+.daily-row .desc .nd{color:var(--sub)}
 .daily-row .amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}
 .daily-row .amt.in{color:var(--green)}.daily-row .amt.out{color:var(--red)}
 .daily-empty,.daily-status{padding:16px;text-align:center;color:var(--faint);font-size:13px}
@@ -2803,8 +2804,11 @@ body.public-mode #panel-bs-public{display:none!important}
         <label>Số tiền
           <input type="text" class="money" id="bill-amount" placeholder="250.000">
         </label>
+        <label>Tiêu đề hạn mục
+          <input type="text" id="bill-title" placeholder="Lê Thị Khương · trả lương">
+        </label>
         <label>Người nhận / gửi
-          <input type="text" id="bill-person" placeholder="TRAN THI KHUONG">
+          <input type="text" id="bill-person" placeholder="LE THI KHUONG">
         </label>
         <label>Nội dung chuyển khoản
           <textarea id="bill-desc" placeholder="Nhat Thanh chuyen khoan nhanh qua Zalo"></textarea>
@@ -7069,14 +7073,15 @@ function renderDailyRows(host, items, emptyText){
       const kind = it.kind==='income'?'in': it.kind==='job'?'job':'out';
       const sign = it.kind==='expense' ? '−' : '+';
       const meta = dailyMeta(it);
-      const stk = meta.account || ((String(it.description||'') + ' ' + String(it.note||'')).match(/(\d[\d\s]{6,}\d)/)||[])[1] || '';
-      const content = (meta.memo || meta.person || it.description || 'Chuyển khoản').replace(/\s+/g,' ').trim();
+      const shown = dailyDisplay(it, meta);
+      const tip = [shown.title, shown.memo].filter(Boolean).join(' · ') || shown.fallback;
       return `<div class="daily-row">
         <span class="kind ${kind}">${esc(DAILY_KIND[it.kind]||it.kind)}</span>
-        <div class="desc" title="${esc(content)}">
+        <div class="desc" title="${esc(tip)}">
           <span class="when">${esc(formatDailyWhen(it.occurredAt, meta))}</span>
-          ${stk ? `<span class="sep">·</span><span class="stk">STK ${esc(stk)}</span>` : ''}
-          <span class="sep">·</span><span class="nd">${esc(content)}</span>
+          ${shown.stk ? `<span class="sep">·</span><span class="stk">STK ${esc(shown.stk)}</span>` : ''}
+          ${shown.title ? `<span class="sep">·</span><span class="ttl">${esc(shown.title)}</span>` : ''}
+          ${shown.memo ? `<span class="sep">·</span><span class="nd">${esc(shown.memo)}</span>` : (!shown.title ? `<span class="sep">·</span><span class="nd">${esc(shown.fallback)}</span>` : '')}
         </div>
         <span class="amt ${kind}">${sign}${fmt(+it.amount||0)}</span>
         <button class="rowbtn" data-daily-del="${esc(it.id)}">✕</button>
@@ -7123,9 +7128,30 @@ async function collectJob(i){
   }
   renderJobs(); calc();
 }
+function sameText(a,b){
+  return foldVie(a).replace(/\s+/g,'').toUpperCase() === foldVie(b).replace(/\s+/g,'').toUpperCase();
+}
+function dailyDisplay(it, meta){
+  meta = meta || {};
+  const stk = meta.account || ((String(it.description||'') + ' ' + String(it.note||'')).match(/(\d[\d\s]{6,}\d)/)||[])[1] || '';
+  let title = String(meta.title || meta.person || '').replace(/\s+/g,' ').trim();
+  let memo = String(meta.memo || '').replace(/\s+/g,' ').trim();
+  const desc = String(it.description||'').replace(/\s+/g,' ').trim();
+  if((!title || !memo) && desc && desc !== 'Chuyển khoản' && desc !== 'Nhận tiền'){
+    const parts = desc.split(/\s·\s/).map(s=>s.trim()).filter(Boolean);
+    if(parts.length >= 2){
+      if(!title) title = parts[0];
+      if(!memo) memo = parts.slice(1).join(' · ');
+    }else if(!title) title = desc;
+  }
+  if(memo && title && sameText(memo, title)) memo = '';
+  if(/^(chuyen khoan|nhan tien)$/i.test(foldVie(memo))) memo = '';
+  return { title, memo, stk, fallback: it.kind==='income' ? 'Nhận tiền' : 'Chuyển khoản' };
+}
 async function addDaily(payload){
   const extra = {
     time: payload.time || '',
+    title: payload.title || '',
     person: payload.person || '',
     memo: payload.memo || '',
     account: payload.account || ''
@@ -7147,16 +7173,17 @@ let BILL_ACCOUNT = '';
 function billDraft(){
   const date = ($('bill-date') && $('bill-date').value) || todayISO();
   const time = ($('bill-time') && $('bill-time').value) || '';
+  const title = (($('bill-title') && $('bill-title').value) || '').trim();
   const person = (($('bill-person') && $('bill-person').value) || '').trim();
   const memo = (($('bill-desc') && $('bill-desc').value) || '').trim();
   return {
     occurredAt: time ? (date + 'T' + time + ':00') : date,
     amount: parseNum($('bill-amount') && $('bill-amount').value),
-    description: [person, memo].filter(Boolean).join(' · ') || 'Chuyển khoản',
+    description: [title || person, memo].filter(Boolean).join(' · ') || 'Chuyển khoản',
     kind: ($('bill-kind') && $('bill-kind').value) || 'expense',
     bank: (($('bill-bank') && $('bill-bank').value) || '').trim() || null,
     bankRef: (($('bill-ref') && $('bill-ref').value) || '').trim() || null,
-    person, memo, time, account: BILL_ACCOUNT
+    title: title || person, person, memo, time, account: BILL_ACCOUNT
   };
 }
 function paintBillCash(){
@@ -7177,8 +7204,9 @@ function fillBillForm(ocr, previewUrl){
   if($('bill-date')) $('bill-date').value = (ocr.occurredAt || todayISO()).slice(0,10);
   if($('bill-time')) $('bill-time').value = ocr.time || '';
   if($('bill-amount')) $('bill-amount').value = ocr.amount ? nf.format(+ocr.amount) : '';
+  if($('bill-title')) $('bill-title').value = ocr.title || ocr.person || '';
   if($('bill-person')) $('bill-person').value = ocr.person || '';
-  if($('bill-desc')) $('bill-desc').value = ocr.memo || ocr.description || '';
+  if($('bill-desc')) $('bill-desc').value = ocr.memo || '';
   if($('bill-kind')) $('bill-kind').value = ocr.kind === 'income' ? 'income' : 'expense';
   if($('bill-bank')) $('bill-bank').value = ocr.bank || '';
   if($('bill-ref')) $('bill-ref').value = ocr.bankRef || '';
@@ -7204,9 +7232,41 @@ function parseVndToken(s){
   const n = Number(digits);
   return (n >= 1000 && n < 1e12) ? n : 0;
 }
+function tidyOcrName(s){
+  return String(s||'')
+    .replace(/\s+/g,' ')
+    .replace(/\b(VND|VNĐ|TAI|TECHCOMBANK|VIETCOMBANK|TPBANK|MBBANK|BIDV|MOMO)\b.*$/i,'')
+    .replace(/^[\s:.\-]+|[\s:.\-]+$/g,'')
+    .trim();
+}
+function isOcrNoiseLine(s){
+  const u = foldVie(s).toUpperCase().replace(/\s+/g,' ').trim();
+  if(!u || u.length < 2) return true;
+  if(/^(VND|VNĐ|D|TECHCOMBANK|VIETCOMBANK|TPBANK|MB ?BANK|BIDV|MOMO|ZALOPAY|CHUYEN THANH CONG|TRANSFER SUCCESS|DA CHUYEN|NHAN TIEN|TIEN VAO)$/.test(u)) return true;
+  if(/^(TAI|TAI KHOAN|SO TAI KHOAN|STK|MA GD|MA GIAO DICH|TRACE|REF|NGAY|LUC)\b/.test(u)) return true;
+  if(/^\d{1,2}\s*(THG|THANG|\/|-)/.test(u)) return true;
+  if(/^(FT|GD)\d+/.test(u)) return true;
+  if(parseVndToken(s) >= 1000 && !/[A-Za-zÀ-ỹ]{3,}/.test(s)) return true;
+  return false;
+}
+function lineAfterLabels(lines, folded, labels){
+  const reExact = new RegExp('^(?:'+labels.join('|')+')\\s*[:.\\-]*$','i');
+  const reInline = new RegExp('^(?:'+labels.join('|')+')\\s*[:.\\-]+\\s*(.+)$','i');
+  for(let i=0;i<folded.length;i++){
+    const ln = folded[i];
+    if(reExact.test(ln) && lines[i+1] && !isOcrNoiseLine(lines[i+1])) return lines[i+1];
+    const m = ln.match(reInline);
+    if(m && m[1].trim().length >= 2 && !isOcrNoiseLine(m[1])) return m[1].trim();
+  }
+  return '';
+}
 function parseBankReceipt(raw){
-  const text = foldVie(raw);
+  const source = String(raw||'').replace(/\u00a0/g,' ');
+  const text = foldVie(source);
   const upper = text.toUpperCase();
+  const lines = source.split(/\r?\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const folded = lines.map(foldVie);
+
   let kind = 'expense';
   if(/NHAN TIEN|TIEN VAO|DA NHAN|RECEIVED/.test(upper) && !/CHUYEN THANH CONG|CHUYEN TIEN|\bTOI\b/.test(upper))
     kind = 'income';
@@ -7252,25 +7312,51 @@ function parseBankReceipt(raw){
   else if(/\bACB\b/.test(upper)) bank = 'ACB';
   else if(/MOMO/.test(upper)) bank = 'MOMO';
 
-  let person = '';
-  const pm = text.match(/(?:toi|to|den)\s+([A-Z][A-Z ]{2,40}?)(?=\s+(?:VND|VNĐ|D|TAI KHOAN|NGAY|LOI NHAN)|$)/i)
-          || raw.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ ]{2,40}?)(?=\s+(?:VND|VNĐ)|$)/i);
-  if(pm) person = pm[1].replace(/\s+/g,' ').trim();
+  let person = tidyOcrName(lineAfterLabels(lines, folded,
+    ['toi','t0i','den','to','from','tu','nguoi nhan','nguoi huong','beneficiary']));
+  if(!person){
+    const pm = text.match(/(?:toi|t0i|den|to)\s+([A-Z][A-Z ]{2,40}?)(?=\s+(?:VND|VNĐ|D|TAI |NGAY|LOI |NOI DUNG|MESSAGE|STK|SO TAI)|$)/i)
+            || source.match(/Tới\s+([A-ZÀ-Ỹ][A-ZÀ-Ỹ ]{2,40}?)(?=\s+(?:VND|VNĐ)|$)/i);
+    if(pm) person = tidyOcrName(pm[1]);
+  }
 
-  let memo = '';
-  const mm2 = text.match(/loi nhan[:\s]+([^\n]{3,80})/i)
-           || raw.match(/Lời nhắn[:\s]+([^\n]{3,80})/i);
-  if(mm2) memo = mm2[1].replace(/\s+/g,' ').trim();
+  let memo = lineAfterLabels(lines, folded, [
+    'loi nhan','l0i nhan','ldi nhan','lbi nhan','loi nhắn',
+    'noi dung','noi dung ck','noi dung chuyen','noi dung chuyen khoan',
+    'message','memo','ghi chu','nd ck','nd','content'
+  ]);
+  if(!memo){
+    const mm2 = text.match(/(?:loi\s*nhan|noi\s*dung(?:\s*(?:ck|chuyen(?:\s*khoan)?)?)?|message|ghi\s*chu|nd\s*ck)\s*[:.\-]*\s*([^\n]{3,120})/i)
+             || source.match(/(?:Lời nhắn|Nội dung(?: chuyển(?: khoản)?)?)\s*[:.\-]*\s*([^\n]{3,120})/i);
+    if(mm2) memo = mm2[1].replace(/\s+/g,' ').trim();
+  }
+  memo = String(memo||'').replace(/\s+/g,' ').trim();
+  if(memo && /^(VND|FT\d+|TECHCOMBANK|TCB)\b/i.test(foldVie(memo))) memo = '';
+  if(person && memo && sameText(person, memo)) memo = '';
+  if(!memo){
+    const accIdx = folded.findIndex(ln=>/(?:so tai khoan|stk|tai khoan nhan)\b/i.test(ln) || /^\d{4}\s?\d{3,}/.test(ln));
+    if(accIdx >= 0){
+      for(let i=accIdx+1;i<Math.min(accIdx+4, lines.length);i++){
+        const cand = lines[i];
+        const u = foldVie(cand);
+        if(isOcrNoiseLine(cand)) continue;
+        if(/^(toi|to|den|nguoi nhan)$/i.test(u)) continue;
+        if(person && sameText(person, cand)) continue;
+        if(/[A-Za-zÀ-ỹ]{3,}/.test(cand)){ memo = cand; break; }
+      }
+    }
+  }
 
   let account = '';
   const am = text.match(/(?:so tai khoan|stk|tai khoan nhan)[:\s]*([0-9][0-9\s]{6,})/i)
-          || raw.match(/\b(\d{4}\s?\d{4}\s?\d{2,})\b/);
+          || source.match(/\b(\d{4}\s?\d{4}\s?\d{2,})\b/);
   if(am) account = am[1].replace(/\s+/g,' ').trim();
 
-  const description = [person, memo].filter(Boolean).join(' · ')
+  const title = person || (memo && memo.length <= 42 ? memo : '') || (kind==='expense' ? 'Chi khác' : 'Thu khác');
+  const description = [title, memo && !sameText(title, memo) ? memo : ''].filter(Boolean).join(' · ')
     || (kind==='expense' ? 'Chuyển khoản' : 'Nhận tiền');
 
-  return { amount, description, person, memo, time, account, occurredAt, bankRef, bank, kind, category:'khac', confidence: amount ? 0.7 : 0.2, raw: text };
+  return { amount, description, title, person, memo, time, account, occurredAt, bankRef, bank, kind, category:'khac', confidence: amount ? 0.7 : 0.2, raw: text };
 }
 let TESS_WORKER = null;
 async function loadTesseract(){
@@ -7284,7 +7370,11 @@ async function loadTesseract(){
     });
   }
   if(!TESS_WORKER){
-    TESS_WORKER = await window.Tesseract.createWorker('eng', 1);
+    try{
+      TESS_WORKER = await window.Tesseract.createWorker('vie+eng', 1);
+    }catch(e){
+      TESS_WORKER = await window.Tesseract.createWorker('eng', 1);
+    }
   }
   return TESS_WORKER;
 }
@@ -7344,7 +7434,7 @@ async function saveBillDraft(){
   closePop();
 }
 function bindDaily(){
-  ['bill-date','bill-amount','bill-kind'].forEach(id=>{
+  ['bill-date','bill-amount','bill-kind','bill-title','bill-desc'].forEach(id=>{
     const el = $(id); if(!el) return;
     el.addEventListener('input', ()=>{
       if(id==='bill-amount') liveFormatMoney(el);
