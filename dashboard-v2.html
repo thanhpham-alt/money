@@ -1574,6 +1574,8 @@ input.datecell.bad{border-color:var(--red);background:var(--red-soft)}
 .pdstrip-out b{color:var(--amber);font-size:13px}
 .pdstrip-out i{font-style:normal;font-size:12px;color:var(--faint)}
 .pdstrip-out .pd-sum{margin-left:auto}
+.pd-pick{width:16px;height:16px;accent-color:var(--amber);cursor:pointer}
+.pd-table th.pick,.pd-table td.pick{width:34px;text-align:center}
 /* nút tick thanh toán (chỉ 2 trạng thái) */
 .tickbtn,.paidbtn{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:var(--card);
   color:var(--faint);font-size:14px;font-weight:800;cursor:pointer;line-height:1;transition:.15s}
@@ -4769,53 +4771,67 @@ function renderPdStrip(p){
   /* Khi đang lọc công nợ, các dòng Producer đã được đưa thẳng lên bảng chính. */
   if(PROD_FILTER !== 'all'){ host.hidden = true; host.innerHTML = ''; return; }
   host.hidden = false;
-  const rows = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r))
-    .sort((a,b)=>Number(prodHasEntry(b.r))-Number(prodHasEntry(a.r)) || a.i-b.i)
-    .map(o=>o.r);
-  const tong = rows.reduce((s,r)=>s+rowTong(r),0);
-  const paid = rows.filter(rowPaid).length;
+  const allPd = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r));
+  const inside = allPd.filter(o=>!o.r.out && !p.pdOut);
+  const outside = allPd.filter(o=>o.r.out || p.pdOut);
+  const rows = inside.map(o=>o.r);
+  const tong = allPd.reduce((s,o)=>s+rowTong(o.r),0);
+  const paid = allPd.filter(o=>rowPaid(o.r)).length;
   const open = !!p._pdOpen;
-  if(p.pdOut){
+  const foldAllIn = ()=>{
+    p.pdOut = false;
+    p.prod.forEach(r=>{ if(isProducer(r)) r.out = false; });
+    p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
+  };
+  if(!inside.length && outside.length){
     host.innerHTML = `
       <div class="pdstrip-out">
         <span class="pd-ic">🎬</span>
         <span class="pd-tx"><b>Chi phí Producer</b>
-          <i>${rows.length} khoản đang hiện trên bảng chính</i></span>
+          <i>${outside.length} khoản đang hiện trên bảng chính</i></span>
         <span class="pd-sum">${fmt(tong)}</span>
         <button class="iconbtn sm" type="button" id="pd-in">Gom lại</button>
       </div>`;
-    $('pd-in').addEventListener('click', ()=>{
-      p.pdOut = false; p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
-    });
+    $('pd-in').addEventListener('click', foldAllIn);
     return;
   }
   host.innerHTML = `
     <div class="pdstrip${rows.length?'':' empty'}${open?' open':''}" id="pd-open">
       <span class="pd-ic">🎬</span>
       <span class="pd-tx"><b>Chi phí Producer</b>
-        <i>${rows.length?`${rows.length} khoản · ${paid} đã thanh toán`:'chưa có khoản nào — thêm tay'}</i></span>
+        <i>${rows.length?`${rows.length} khoản trong dải${outside.length?` · ${outside.length} đã ra bảng`:''} · ${paid} đã TT`:'chưa có khoản nào — thêm tay'}</i></span>
       <span class="pd-sum">${fmt(tong)}</span>
-      <button class="iconbtn sm pd-outbtn" type="button" id="pd-out" title="Hiện các khoản Producer trên bảng chính">Đưa ra ngoài</button>
+      <button class="iconbtn sm pd-outbtn" type="button" id="pd-out" title="Tick ô rồi đưa các khoản đã chọn ra bảng chính">Đưa ra ngoài</button>
       <span class="pd-caret">${open?'▾':'▸'}</span>
     </div>
     <div class="pd-panel" ${open?'':'hidden'}>
       <div class="tablewrap">
         <table class="prod-table pd-table">
-          <thead><tr><th class="stt">#</th><th>Hạng mục</th><th class="num">Chi phí</th>
+          <thead><tr>
+            <th class="pick"><input type="checkbox" class="pd-pick" id="pd-pick-all" title="Chọn tất cả"></th>
+            <th class="stt">#</th><th>Hạng mục</th><th class="num">Chi phí</th>
             <th class="mid">OT</th><th>Còn trả</th><th>Thanh toán</th><th>Ghi chú</th><th></th></tr></thead>
           <tbody id="pd-body"></tbody>
         </table>
       </div>
       <div class="pd-actions">
         <button class="iconbtn sm" id="pd-add">+ Thêm khoản</button>
-        <button class="iconbtn sm" type="button" id="pd-out-2">Đưa ra ngoài</button>
+        <button class="iconbtn sm" type="button" id="pd-out-2">Đưa ô đã chọn ra ngoài</button>
         <div class="pd-total"><span>Tổng chi phí Producer</span><b>${fmt(tong)}</b></div>
       </div>
     </div>`;
 
+  const selectedIdx = ()=> [...host.querySelectorAll('[data-pd-pick]:checked')].map(el=>+el.dataset.pdPick);
   const bringOut = ev=>{
     ev.preventDefault(); ev.stopPropagation();
-    p.pdOut = true; p._pdOpen = false; save(); renderProd(p); renderPdStrip(p); calc();
+    let idxs = selectedIdx();
+    if(!idxs.length){
+      alert('Tick ô các khoản muốn đưa ra bảng chính.');
+      p._pdOpen = true; renderPdStrip(p);
+      return;
+    }
+    idxs.forEach(i=>{ if(p.prod[i]) p.prod[i].out = true; });
+    p.pdOut = false; p._pdOpen = true; save(); renderProd(p); renderPdStrip(p); calc();
   };
   $('pd-open').addEventListener('click', e=>{
     if(e.target.closest('#pd-out')) return;
@@ -4825,9 +4841,10 @@ function renderPdStrip(p){
   if(!open) return;
 
   const drawBody = ()=>{
-    const idx = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r));
+    const idx = p.prod.map((r,i)=>({r,i})).filter(o=>isProducer(o.r) && !o.r.out);
     $('pd-body').innerHTML = idx.length ? idx.map(({r,i}, n)=>`
       <tr class="${rowPaid(r)?'is-paid':''}">
+        <td class="pick"><input type="checkbox" class="pd-pick" data-pd-pick="${i}"></td>
         <td class="stt">${n+1}</td>
         <td><input class="plain" data-i="${i}" data-k="ten" value="${esc(r.ten)}" placeholder="Hạng mục"></td>
         <td class="num"><input class="plain num money" data-i="${i}" data-k="cp" value="${nf.format(+r.cp||0)}"></td>
@@ -4839,7 +4856,14 @@ function renderPdStrip(p){
         <td><input class="plain note" data-i="${i}" data-k="note" value="${esc(r.note)}" placeholder="—"></td>
         <td style="width:34px"><button class="rowbtn" data-del="${i}">✕</button></td>
       </tr>`).join('')
-      : '<tr><td colspan="8"><div class="empty">Chưa có khoản nào.</div></td></tr>';
+      : '<tr><td colspan="9"><div class="empty">Chưa có khoản nào.</div></td></tr>';
+    const all = $('pd-pick-all');
+    if(all){
+      all.checked = false;
+      all.addEventListener('change', ()=>{
+        host.querySelectorAll('[data-pd-pick]').forEach(el=>{ el.checked = all.checked; });
+      });
+    }
 
     $('pd-body').querySelectorAll('input.plain').forEach(inp=>{
       const isMoney = inp.classList.contains('money');
@@ -4872,9 +4896,9 @@ function renderProd(p){
   if(dl) dl.innerHTML = S.crew.map(c=>
     `<option value="${esc(c.ten)}">${esc([c.vitri, c.sdt].filter(Boolean).join(' · '))}</option>`).join('');
 
-  /* Chế độ Tất cả giữ Producer trong dải riêng, trừ khi bấm “Đưa ra ngoài”. */
+  /* Chế độ Tất cả: Producer ở dải riêng, trừ dòng đã tick “Đưa ra ngoài”. */
   let prodRows = p.prod.map((r,i)=>({r,i}));
-  if(PROD_FILTER === 'all' && !p.pdOut) prodRows = prodRows.filter(o=>!isProducer(o.r));
+  if(PROD_FILTER === 'all' && !p.pdOut) prodRows = prodRows.filter(o=>!isProducer(o.r) || o.r.out);
   if(PROD_FILTER === 'paid') prodRows = prodRows.filter(o=>rowPaid(o.r));
   if(PROD_FILTER === 'unpaid') prodRows = prodRows.filter(o=>!rowPaid(o.r));
   const searchNeedle = NORM(PROD_SEARCH);
@@ -4918,7 +4942,10 @@ function renderProd(p){
         <button class="rowdel" data-del="${i}" title="Xoá dòng này">✕</button></td>
 
       <td class="col-fl" data-label="Freelancer">
-        ${isProducer(r) ? `<div class="producer-source" title="Khoản chi thuộc nhóm Producer"><span>🎬</span><b>Producer</b></div>`
+        ${isProducer(r) ? `<div class="producer-source" title="Khoản Producer đang hiện trên bảng">
+            <span>🎬</span><b>Producer</b>
+            <button type="button" class="fl-more" data-pd-in="${i}" title="Gom khoản này vào dải Producer">↩</button>
+          </div>`
           : c ? `<button class="flchip" data-pick="${i}" title="Đổi freelancer">
                  <span class="fl-av">${esc(initials(c.ten))}</span>
                  <span class="fl-txt"><b>${esc(c.ten)||'—'}</b><i>${esc(c.vitri||'')}${c.sdt?' · '+esc(c.sdt):''}</i></span>
@@ -4995,6 +5022,14 @@ function renderProd(p){
       r.loai = isProducer(r) ? 'ctv' : 'producer';
       if(isProducer(r)){ r.crewId = ''; r.flText = ''; }
       renderProd(p); calc();
+    });
+  });
+  body.querySelectorAll('[data-pd-in]').forEach(b=>{
+    b.addEventListener('click', ev=>{
+      ev.preventDefault(); ev.stopPropagation();
+      const r = p.prod[+b.dataset.pdIn];
+      if(r){ r.out = false; p.pdOut = false; }
+      save(); renderProd(p); renderPdStrip(p); calc();
     });
   });
 
