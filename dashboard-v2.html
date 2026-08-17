@@ -511,6 +511,9 @@ body.mobile-bill .bill-up{
 body.mobile-bill .bill-up.primary{background:var(--card);border-color:var(--border);color:var(--text)}
 body.mobile-bill .bill-actions{position:static;margin:0;padding:0;background:transparent}
 body.mobile-bill #bill-save{width:100%;height:56px;border:0;border-radius:16px;font-size:17px;font-weight:800}
+body.mobile-bill #bill-result{display:block;margin:0;padding:12px 14px;border-radius:14px;background:var(--green-soft);color:var(--green);font-size:14px;font-weight:750;line-height:1.4}
+body.mobile-bill #bill-result[hidden]{display:none!important}
+body.mobile-bill #bill-result.is-err{background:var(--red-soft);color:var(--red)}
 .jt-sum{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 .job-table th.sortable{cursor:pointer;user-select:none;transition:.15s}
 .job-table th.sortable:hover{color:var(--accent)}
@@ -2875,6 +2878,7 @@ body.public-mode #panel-bs-public{display:none!important}
       </div>
     </div>
     <div class="bill-cash" id="bill-cash"><span>Tiền hiện có sau trừ</span><b>—</b></div>
+    <div class="bill-result" id="bill-result" hidden></div>
     <div class="bill-actions">
       <button class="iconbtn" type="button" id="bill-cam">Chụp ảnh</button>
       <button class="iconbtn" type="button" id="bill-pick">Chọn ảnh</button>
@@ -7222,8 +7226,15 @@ async function addDaily(payload){
   return saved;
 }
 let BILL_QUEUE = [];
-let BILL_PREVIEW_URL = '';
 let BILL_ACCOUNT = '';
+let BILL_LAST_OK = '';
+function showBillResult(msg, isErr){
+  const el = $('bill-result');
+  if(!el) return;
+  el.hidden = !msg;
+  el.classList.toggle('is-err', !!isErr);
+  el.textContent = msg || '';
+}
 function billDraft(){
   const date = ($('bill-date') && $('bill-date').value) || todayISO();
   const time = ($('bill-time') && $('bill-time').value) || '';
@@ -7546,52 +7557,97 @@ async function ocrOneBill(file){
   if(!parsed.kind) parsed.kind = 'expense';
   return parsed;
 }
+function draftFromOcr(ocr){
+  fillBillForm(ocr);
+  return billDraft();
+}
+async function saveOcrBill(ocr){
+  const d = draftFromOcr(ocr);
+  if(!d.amount) throw new Error('no-amount');
+  return addDaily({ ...d, source:'ocr' });
+}
 async function startBillQueue(files, statusEl, btn){
   const list = [...files].filter(f=>String(f.type||'').startsWith('image/'));
   if(!list.length){ alert('Chỉ chọn ảnh bill / chuyển khoản.'); return; }
+  const mobile = document.body.classList.contains('mobile-bill');
   const label = btn ? btn.textContent : '';
-  if(btn){ btn.disabled = true; btn.textContent = 'Đang đọc…'; }
+  const setBusy = (on, text)=>{
+    if(btn){ btn.disabled = on; btn.textContent = on ? (text || 'Đang đọc…') : label; }
+    if($('bill-pick-m')){ $('bill-pick-m').disabled = on; $('bill-pick-m').textContent = on ? (text || 'Đang đọc…') : 'Upload'; }
+    if($('bill-save')) $('bill-save').disabled = on;
+  };
+  setBusy(true, list.length > 1 ? 'Đang đọc 1/' + list.length : 'Đang đọc…');
   if(statusEl){ statusEl.hidden = false; statusEl.textContent = 'Đang đọc số liệu…'; }
-  if($('bill-pick-m')){ $('bill-pick-m').disabled = true; $('bill-pick-m').textContent = 'Đang đọc…'; }
+  showBillResult('');
+  openBillTool();
   try{
+    if(mobile){
+      let ok = 0, fail = 0, total = 0;
+      for(let i=0;i<list.length;i++){
+        setBusy(true, 'Đang ghi ' + (i+1) + '/' + list.length);
+        try{
+          const ocr = await ocrOneBill(list[i]);
+          if(!ocr.amount){ fail++; continue; }
+          const saved = await saveOcrBill(ocr);
+          ok++; total += Math.round(+saved.amount || 0);
+          BILL_LAST_OK = `Đã trừ ${ok} ảnh · ${fmt(total)}`;
+          showBillResult(BILL_LAST_OK + (fail ? ` · lỗi ${fail}` : ''));
+          paintBillCash();
+        }catch(e){ fail++; }
+      }
+      setBillField('bill-amount', '');
+      setBillField('bill-title', '');
+      setBillField('bill-person', '');
+      setBillField('bill-desc', '');
+      paintBillCash();
+      if(ok){
+        BILL_LAST_OK = `Đã trừ ${ok} ảnh · ${fmt(total)} · còn ${fmt(money('v_h3'))}`;
+        showBillResult(BILL_LAST_OK);
+      }else{
+        BILL_LAST_OK = '';
+        showBillResult('Không đọc được số tiền. Upload lại ảnh.', true);
+      }
+      if(statusEl) statusEl.textContent = BILL_LAST_OK || 'Không đọc được số tiền.';
+      return;
+    }
     const ocr = await ocrOneBill(list[0]);
     BILL_QUEUE = list.slice(1);
     fillBillForm(ocr);
-    openBillTool();
     if(statusEl) statusEl.textContent = BILL_QUEUE.length
-      ? `Đã đọc 1 ảnh · còn ${BILL_QUEUE.length} ảnh`
+      ? `Đã đọc 1 ảnh · còn ${BILL_QUEUE.length} ảnh — bấm Ghi`
       : 'Đã lấy số liệu — bấm Ghi và trừ tiền';
-    if($('bill-pick-m')){ $('bill-pick-m').disabled = false; $('bill-pick-m').textContent = 'Upload'; }
   }catch(err){
-    alert(err.message || 'Không đọc được bill.');
+    showBillResult(err.message || 'Không đọc được bill.', true);
+    if(!mobile) alert(err.message || 'Không đọc được bill.');
   }finally{
-    if(btn){ btn.disabled = false; btn.textContent = label; }
-    if($('bill-pick-m')){ $('bill-pick-m').disabled = false; $('bill-pick-m').textContent = 'Upload'; }
+    setBusy(false);
   }
 }
 async function saveBillDraft(){
+  const mobile = document.body.classList.contains('mobile-bill');
   const d = billDraft();
   if(!d.amount){
-    if(document.body.classList.contains('mobile-bill')){ alert('Chưa đọc được số tiền. Upload lại ảnh.'); return; }
+    if(mobile){
+      showBillResult(BILL_LAST_OK || 'Chưa có bill. Bấm Upload để chọn ảnh.', !BILL_LAST_OK);
+      return;
+    }
     $('bill-amount').focus(); return;
   }
-  if(!d.description){ $('bill-desc').focus(); return; }
   const saved = await addDaily({ ...d, source:'ocr' });
-  if(document.body.classList.contains('mobile-bill')){
-    setBillField('bill-amount', '');
-    setBillField('bill-title', '');
-    setBillField('bill-person', '');
-    setBillField('bill-desc', '');
-    paintBillCash();
-  }
   const status = $('job-chi-status');
   if(status){
     status.hidden = false;
     status.textContent = `Đã ghi ${fmt(saved.amount)} · ${saved.description} — ${saved.kind==='income'?'cộng':'trừ'} Tiền hiện có`;
   }
-  if($('bill-mob-status')){
-    $('bill-mob-status').hidden = false;
-    $('bill-mob-status').textContent = `Đã ghi ${fmt(saved.amount)}`;
+  if(mobile){
+    BILL_LAST_OK = `Đã trừ ${fmt(saved.amount)} · còn ${fmt(money('v_h3'))}`;
+    showBillResult(BILL_LAST_OK);
+    setBillField('bill-amount', '');
+    setBillField('bill-title', '');
+    setBillField('bill-person', '');
+    setBillField('bill-desc', '');
+    paintBillCash();
+    return;
   }
   if(BILL_QUEUE.length){
     const next = BILL_QUEUE.shift();
@@ -7600,7 +7656,6 @@ async function saveBillDraft(){
       fillBillForm(ocr);
     }catch(err){
       alert(err.message || 'Ảnh tiếp theo đọc lỗi.');
-      closePop();
     }
     return;
   }
